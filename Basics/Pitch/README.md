@@ -4,7 +4,7 @@ This folder contains some basic options to create a football pitch in python. <b
 
 Based on inspirations I found online which inlcude the work of FCPython and McKay Johns and the packages mplsoccer and floodlight I also created my own simple function to create a custom pitch. <br>
 
-## create_custom_pitch()
+## My_Pitch.py
 
 **create_custom_Pitch(grasscol='#6aa84f', pitchcol = '#38761d', linecol='white', figs=(10.5, 6.5), l=105, w=65):** <br>
 
