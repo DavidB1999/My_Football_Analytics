@@ -1,14 +1,35 @@
 # Pitch
 
-This folder contains basic options to create a football pitch. <br>
+This folder contains some basic options to create a football pitch in python. <br>
 
-Based on inspirations I found online which inlcude the work of FCPython and McKay Johns and the packages mplsoccer and floodlight I also create my own simple function to create a pitch. <br>
+Based on inspirations I found online which inlcude the work of FCPython and McKay Johns and the packages mplsoccer and floodlight I also created my own simple function to create a custom pitch. <br>
+
+## create_custom_pitch()
+
+**create_custom_Pitch(grasscol='#6aa84f', pitchcol = '#38761d', linecol='white', figs=(10.5, 6.5), l=105, w=65):** <br>
+
+**Parameters:** 
+
++ *grasscol (color)*: Color of the pitch within the pitch limits
++ *pitchcol (color)*: Color of the area around the pitch
++ *linecol (color)*: Color of lines
++ *figs (tuple of floats)*: figsize
++ *l (float/int)*: length of the pitch in meters (should match the dimensions of your data!)
++ *w (float/int)*: width of the pitch in meters (should match the dimensions of your data!)
+
+**Returns:**
+
++ *pitch* (figure)
+  
+
 My own function used pitch dimensions based on the following image in meters: <br>
 
 <img src="https://github.com/DavidB1999/My_Football_Analytics/blob/main/Basics/Pitch/Fu%C3%9Fballfeld.png" width="600" />
 
 
-### Credits
+
+
+## Credits
 
 FCPython: https://fcpython.com/visualisation/drawing-pitchmap-adding-lines-circles-matplotlib <br>
 Floodlight: https://floodlight.readthedocs.io/en/latest/index.html <br>
