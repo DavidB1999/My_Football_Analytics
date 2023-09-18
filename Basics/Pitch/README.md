@@ -2,8 +2,9 @@
 
 This folder contains basic options to create a football pitch. <br>
 
-Based on inspirations I found online which inlcude the work of FCPython and McKay Johns and the packages mplsoccer and floodlight I also create my own simple function to create a pitch.
-
+Based on inspirations I found online which inlcude the work of FCPython and McKay Johns and the packages mplsoccer and floodlight I also create my own simple function to create a pitch. <br>
+My own function used pitch dimensions based on the following image in meters: <br>
+![Alt-Text](Basics/Pitch/Fußballfeld.png)
 
 
 ### Credits
