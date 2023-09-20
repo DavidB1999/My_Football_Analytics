@@ -22,7 +22,7 @@ Based on inspirations I found online which inlcude the work of FCPython and McKa
 + *pitch* (figure)
   
 
-My own function used pitch dimensions based on the following image in meters: <br>
+My own function used pitch dimensions based on the following image [1] in meters: <br>
 
 <img src="https://github.com/DavidB1999/My_Football_Analytics/blob/main/Basics/Pitch/Fu%C3%9Fballfeld.png" width="600" />
 
@@ -33,6 +33,9 @@ My own function used pitch dimensions based on the following image in meters: <b
 
 FCPython: https://fcpython.com/visualisation/drawing-pitchmap-adding-lines-circles-matplotlib <br>
 Floodlight: https://floodlight.readthedocs.io/en/latest/index.html <br>
-image: https://de.wikipedia.org/wiki/Fu%C3%9Fballregeln <br>
 McKay Johns: https://www.youtube.com/watch?v=55k1mCRyd2k <br>
 mplsoccer: https://mplsoccer.readthedocs.io/en/latest/index.html <br>
+
+## References
+
+[1] - https://de.wikipedia.org/wiki/Fu%C3%9Fballregeln <br>
