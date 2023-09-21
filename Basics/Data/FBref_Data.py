@@ -1,5 +1,4 @@
-# This script allows us to access the full scouting report via the player base page
-# and then scrape the entire scouting report
+# This scripts entails different functions to access data from FBref.
 
 from bs4 import BeautifulSoup
 import requests
@@ -7,6 +6,10 @@ import pandas as pd
 import json
 
 
+# -----------------------------------------------------------------------------------
+# This function allows us to access the full scouting report via the player base page
+# and then scrape the entire scouting report
+# -----------------------------------------------------------------------------------
 def Scrape_Player_via_Link(URL):
     base_url = 'https://fbref.com/'
 
@@ -117,8 +120,9 @@ def Scrape_Player_via_Link(URL):
                       columns=['Variables', 'Values', 'Percentiles'])
     return df, name, position
 
-
+# -----------------------------------------------------
 # same function adapted for streamlit i.e. split in two
+# -----------------------------------------------------
 def Scrape_Player_via_Link_st1(URL):
     base_url = 'https://fbref.com/'
 
@@ -224,7 +228,17 @@ def Scrape_Player_via_Link_st2(soup, selected_position, unique_positions, positi
                       columns=['Variables', 'Values', 'Percentiles'])
     return df, position
 
-
+# ------------------------------------------------------------------------------------------------------
+# Had the idea in mind to change the function above, so that it does not require a correct URL
+# Instead entering a players name should result in the first result of the search on FBref being scraped
+# ------------------------------------------------------------------------------------------------------
 def Scrape_Player_via_Search(searchterm):
     # this might be included later
     print('Not yet available!')
+
+
+
+
+
+
+
