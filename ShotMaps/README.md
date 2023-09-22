@@ -57,6 +57,7 @@ $$ \Delta a < 0: c_{new}  = b_2 - c \times s$$
 For more details check [Scaling_Reasoning.xlsx](Scaling_Reasoning.xlsx). <br>
 
 
+
 ### static_shotmap
 
 to follow <br>
