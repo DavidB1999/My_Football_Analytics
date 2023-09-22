@@ -6,7 +6,7 @@ Based on inspirations I found online which inlcude the work of FCPython and McKa
 
 ## My_Pitch.py
 
-**create_custom_Pitch(grasscol='#6aa84f', pitchcol = '#38761d', linecol='white', figs=(10.5, 6.5), l=105, w=65):** <br>
+**create_custom_Pitch** (grasscol='#6aa84f', pitchcol = '#38761d', linecol='white', figs=(10.5, 6.5), l=105, w=65):<br>
 
 **Parameters:** 
 
