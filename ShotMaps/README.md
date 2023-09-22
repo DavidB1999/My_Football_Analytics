@@ -11,14 +11,14 @@ This folder contains everything necessary to create shot maps inspired by the sh
 
 **Parameters** 
 
-+ *shot_data (dataframe)*: dataframe containig the columms with the team name, minute, xG-values and x and y coordinate 
++ *shot_data (dataframe)*: dataframe containing the columns with the team name, minute, xG-values and x and y coordinate 
 + *data_source (str)* - data origin (influences data handling)
 + *x_range_data* and *y_range_data (tuple, numeric)* - range of x and y coordinates in the *shot_data*
-+ *team_column (str)* - name of the column cotaining team names
-+ *x_col (str)* - name of the column cotaining the x-coordinates
-+ *y_col (str)* - name of the column cotaining the y-coordinates
-+ *xg_column (str)* - name of the column cotaining the xG-values
-+ *minute_col (str)* - name of the column cotaining minutes
++ *team_column (str)* - name of the column containing team names
++ *x_col (str)* - name of the column containing the x-coordinates
++ *y_col (str)* - name of the column containing the y-coordinates
++ *xg_column (str)* - name of the column containing the xG-values
++ *minute_col (str)* - name of the column containing minutes
 + *scale_to_pitch (str)* - default options of data ranges to scale to
 + *x_range_pitch* and *x_range_pitch (tuple, numeric)* - range of x and y coordinates required
 + *mirror_away (list, str)* - list of axes (x, y) to mirror for the away team 
@@ -53,6 +53,8 @@ $$ \Delta a < 0: c_{new}  = b_2 + c \times s$$
 $$ \Delta a > 0: c_{new}  = b_1 - c \times s$$
 
 $$ \Delta a < 0: c_{new}  = b_2 - c \times s$$
+
+For more details check [Scaling_Reasoning.xlsx](Scaling_Reasoning.xlsx). <br>
 
 
 ### static_shotmap
