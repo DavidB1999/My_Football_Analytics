@@ -2,10 +2,10 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from mplsoccer import Pitch
-from Pitch.My_Pitch import myPitch # might need adaptation of path depending on whether it is used in pycharm or jupyter notebook
+from Pitch.My_Pitch import \
+    myPitch  # might need adaptation of path depending on whether it is used in pycharm or jupyter notebook
 import matplotlib.image as mpimg
 from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationBbox
-
 
 
 # ------------------------------------------------------------------------
@@ -133,22 +133,26 @@ class shot_data:
             raise ValueError(
                 f'{self.data_source} not supported. At this point, "Understat" is the only supported data format.')
 
-        return data
+        return data, x_range_pitch, y_range_pitch
 
     # ----------------------------------
     # a static (non-interactive) shotmap
     # ----------------------------------
-    def static_shotmap(self, pitch_type='mplsoccer', point_size_range=(20,500),
+    def static_shotmap(self, pitch_type='mplsoccer', point_size_range=(20, 500),
                        markers={'SavedShot': "^", 'MissedShots': 'o', 'BlockedShot': "v", 'Goal': '*',
                                 'OwnGoal': 'X', 'ShotOnPost': "h"},
                        alpha=0.5, color1='red', color2='blue',
                        x_range_pitch=None, y_range_pitch=None, sc_mirror_away=['x', 'y'],
-                       xg_text=True, result_text=True, name_text=True,
-                       home_image=None, away_image=None):
+                       xg_text=True, xg_text_x=None, xg_text_y=None,
+                       result_text=True, result_text_x=None, result_text_y=None,
+                       name_text=True, name_text_x=None, name_text_y=None,
+                       home_image=None, away_image=None, logo_x=None, logo_y=None):
 
         # scale using function
-        scaled_shot_data = self.rescale_shot_data(scale_to_pitch=pitch_type, x_range_pitch=x_range_pitch,
-                                                  y_range_pitch=y_range_pitch, mirror_away=sc_mirror_away)
+        scaled_shot_data, x_range_pitch, y_range_pitch = self.rescale_shot_data(scale_to_pitch=pitch_type,
+                                                                                x_range_pitch=x_range_pitch,
+                                                                                y_range_pitch=y_range_pitch,
+                                                                                mirror_away=sc_mirror_away)
 
         # get team identities
         home_team = scaled_shot_data[self.team_column].unique()[0]
@@ -173,44 +177,110 @@ class shot_data:
                         palette={home_team: color1, away_team: color2})
 
         # some text informations
+        xmax = max(x_range_pitch)
+        ymax = max(y_range_pitch)
         if xg_text:
-            plt.text(x=40, y=60, s=str(sum(scaled_shot_data.loc[filter1, self.xg_col])),
+            # determine positions if not specified
+            if pitch_type == 'mplsoccer':
+                if xg_text_x is None:
+                    xg_text_x = (1 / 3, 2 / 3)
+                if xg_text_y is None:
+                    xg_text_y = (0.8, 0.8)
+            elif pitch_type == 'myPitch':
+                if xg_text_x is None:
+                    xg_text_x = (1 / 3, 2 / 3)
+                if xg_text_y is None:
+                    xg_text_y = (0.2, 0.2)
+            elif (xg_text_x is None) and (xg_text_y is None):
+                raise ValueError(f'If you want the expected goals to be placed as a text, you have to '
+                                 f'either select a pitch_type, currently {pitch_type}, or specifiy'
+                                 f'the intended positioning via "xg_text_x" and "xg_text_y", currently '
+                                 f'{xg_text_x}, {xg_text_y}!')
+
+            plt.text(x=xg_text_x[0]*xmax, y=xg_text_y[0]*ymax, s=str(sum(scaled_shot_data.loc[filter1, self.xg_col])),
                      fontsize=40, weight='bold', c=color1, alpha=0.25, ha='center', va='center')
-            plt.text(x=80, y=60, s=str(sum(scaled_shot_data.loc[filter2, self.xg_col])),
+            plt.text(x=xg_text_x[1]*xmax, y=xg_text_y[1]*ymax, s=str(sum(scaled_shot_data.loc[filter2, self.xg_col])),
                      fontsize=40, weight='bold', c=color2, alpha=0.25, ha='center', va='center')
         if result_text:
-            ng1 = len(scaled_shot_data[self.result_col][scaled_shot_data[self.result_col] == 'Goal'][scaled_shot_data[self.team_column] == home_team])
-            + len(scaled_shot_data[self.result_col][scaled_shot_data[self.result_col] == 'OwnGoal'][scaled_shot_data[self.team_column] == away_team])
+            # determine positions if not specified
+            if pitch_type == 'mplsoccer':
+                if result_text_x is None:
+                    result_text_x = (1 / 3, 2 / 3)
+                if result_text_y is None:
+                    result_text_y = (0.5, 0.5)
+            elif pitch_type == 'myPitch':
+                if result_text_x is None:
+                    result_text_x = (1 / 3, 2 / 3)
+                if result_text_y is None:
+                    result_text_y = (0.5, 0.5)
+            elif (result_text_x is None) and (result_text_y is None):
+                raise ValueError(f'If you want the expected goals to be placed as a text, you have to '
+                                 f'either select a pitch_type, currently {pitch_type}, or specifiy'
+                                 f'the intended positioning via "result_text_x" and "result_text_y", currently '
+                                 f'{result_text_x}, {result_text_y}!')
+
+            # determine goal count
+            ng1 = len(scaled_shot_data[self.result_col][scaled_shot_data[self.result_col] == 'Goal'][
+                          scaled_shot_data[self.team_column] == home_team])
+            + len(scaled_shot_data[self.result_col][scaled_shot_data[self.result_col] == 'OwnGoal'][
+                      scaled_shot_data[self.team_column] == away_team])
             ng2 = len(scaled_shot_data[self.result_col][scaled_shot_data[self.result_col] == 'Goal'][
                           scaled_shot_data[self.team_column] == away_team])
             + len(scaled_shot_data[self.result_col][scaled_shot_data[self.result_col] == 'OwnGoal'][
                       scaled_shot_data[self.team_column] == home_team])
 
-            plt.text(x=40, y=40, s=str(ng1), fontsize=50, weight='bold', c=color1, alpha=0.35,
+            plt.text(x=result_text_x[0]*xmax, y=result_text_y[0]*ymax, s=str(ng1), fontsize=50, weight='bold', c=color1, alpha=0.35,
                      ha='center', va='center')
-            plt.text(x=80, y=40, s=str(ng2), fontsize=50, weight='bold', c=color2, alpha=0.35,
+            plt.text(x=result_text_x[1]*xmax, y=result_text_y[1]*ymax, s=str(ng2), fontsize=50, weight='bold', c=color2, alpha=0.35,
                      ha='center', va='center')
 
             if name_text:
-                plt.text(x=40, y=22, s=home_team, size='x-large', weight='bold', c=color1, alpha=0.25,
+                # determine positions if not specified
+                if pitch_type == 'mplsoccer':
+                    if name_text_x is None:
+                        name_text_x = (1 / 3, 2 / 3)
+                    if name_text_y is None:
+                        name_text_y = (0.3, 0.3)
+                elif pitch_type == 'myPitch':
+                    if name_text_x is None:
+                        name_text_x = (1 / 3, 2 / 3)
+                    if name_text_y is None:
+                        name_text_y = (0.7, 0.65)
+                elif (name_text_x is None) and (name_text_y is None):
+                    raise ValueError(f"If you want the teams' names to be placed as a text, you have to "
+                                     f'either select a pitch_type, currently {pitch_type}, or specify'
+                                     f'the intended positioning via "name_text_x" and "name_text_y", currently '
+                                     f'{name_text_x}, {name_text_y}!')
+
+                plt.text(x=name_text_x[0]*xmax, y=name_text_y[0]*ymax, s=home_team, size='x-large', weight='bold', c=color1, alpha=0.25,
                          ha='center')
-                plt.text(x=80, y=22, s=away_team, size='x-large', weight='bold', c=color2, alpha=0.25,
+                plt.text(x=name_text_x[1]*xmax, y=name_text_y[1]*ymax, s=away_team, size='x-large', weight='bold', c=color2, alpha=0.25,
                          ha='center')
 
-            if home_image is not None:
-                Logo_H = mpimg.imread(home_image)
-                imagebox_H = OffsetImage(Logo_H, zoom=0.025)
-                ab_H = AnnotationBbox(imagebox_H, (40, 10), frameon=False)
-                ax.add_artist(ab_H)
-            if home_image is not None:
-                Logo_A = mpimg.imread(away_image)
-                imagebox_A = OffsetImage(Logo_A, zoom=0.025)
-                ab_A = AnnotationBbox(imagebox_A, (80, 10), frameon=False)
-                ax.add_artist(ab_A)
-
-
-
-
-
-
-
+            if home_image is not None or away_image is not None:
+                # determine positions if not specified
+                if pitch_type == 'mplsoccer':
+                    if logo_x is None:
+                        logo_x = (1 / 3, 2 / 3)
+                    if logo_y is None:
+                        logo_y = (0.15, 0.15)
+                elif pitch_type == 'myPitch':
+                    if logo_x is None:
+                        logo_x = (1 / 3, 2 / 3)
+                    if logo_y is None:
+                        logo_y = (0.85, 0.85)
+                elif (logo_x is None) and (logo_y is None):
+                    raise ValueError(f"If you want the teams' logos displayed, you have to "
+                                     f'either select a pitch_type, currently {pitch_type}, or specify'
+                                     f'the intended positioning via "home_image_x" and "home_image_y", currently '
+                                     f'{logo_x}, {logo_y}!')
+                if home_image is not None:
+                    Logo_H = mpimg.imread(home_image)
+                    imagebox_H = OffsetImage(Logo_H, zoom=0.025)
+                    ab_H = AnnotationBbox(imagebox_H, (logo_x[0]*xmax, logo_y[0]*ymax), frameon=False)
+                    ax.add_artist(ab_H)
+                if away_image is not None:
+                    Logo_A = mpimg.imread(away_image)
+                    imagebox_A = OffsetImage(Logo_A, zoom=0.025)
+                    ab_A = AnnotationBbox(imagebox_A, (logo_x[1]*xmax, logo_y[1]*ymax), frameon=False)
+                    ax.add_artist(ab_A)
