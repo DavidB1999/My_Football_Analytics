@@ -2,13 +2,13 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from mplsoccer import Pitch
-from Pitch.My_Pitch import myPitch  # might need adaptation of path depending on whether it is used in pycharm or jupyter notebook
+from Pitch.My_Pitch import \
+    myPitch  # might need adaptation of path depending on whether it is used in pycharm or jupyter notebook
 import matplotlib.image as mpimg
 from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationBbox
 import plotly.express as px
 import plotly.graph_objects as go
 from PIL import Image
-
 
 
 # ------------------------------------------------------------------------
@@ -18,7 +18,7 @@ from PIL import Image
 class shot_data:
     def __init__(self, data, data_source=None, x_range_data=None, y_range_data=None, team_column='team',
                  x_col='x', y_col='y', xg_col='xG', minute_col='minute', result_col='result',
-                 scale_to_pitch='mplsoccer', x_range_pitch=None, y_range_pitch=None, player_col = 'player',
+                 scale_to_pitch='mplsoccer', x_range_pitch=None, y_range_pitch=None, player_col='player',
                  mirror_away=['x', 'y']):
         self.org_data = data
         self.data_source = data_source
@@ -326,9 +326,14 @@ class shot_data:
     # ----------------------------------
     # an interactive shotmap with plotly
     # ----------------------------------
-    def interactive_shotmap(self, color1='red', color2='blue', pitch_type='mplsoccer',
-                            pitch_x0=None, pitch_y0=None):
-
+    def interactive_shotmap(self, color1='red', color2='blue', pitch_type='mplsoccer', background_col='#435348',
+                            pitch_x0=None, pitch_y0=None, size_multiplicator=5, title=None, title_col='white',
+                            xg_text=True, xg_text_x=None, xg_text_y=None, margins=None,
+                            result_text=True, result_text_x=None, result_text_y=None,
+                            name_text=True, name_text_x=None, name_text_y=None,
+                            home_image=None, away_image=None, logo_x=None, logo_y=None,
+                            axis_visible=False):
+        supported_pitch_types = ['mplsoccer', 'myPitch']
         markers = {'SavedShot': "triangle-up", 'MissedShots': 'circle', 'BlockedShot': "triangle-down", 'Goal': 'star',
                    'OwnGoal': 'X', 'ShotOnPost': "hexagon"}
 
@@ -350,30 +355,34 @@ class shot_data:
         # create pitch and save a png of pitch
         # also define necessary parameters (origin and size of pitch) if not supplied explicitly
         if pitch_type == 'mplsoccer':
+            aa = 'reversed'
             if pitch_x0 is None:
                 pitch_x0 = -3.75
             if pitch_y0 is None:
                 pitch_y0 = -3.75
 
-            # 0 + 120 + (-2*(0-3.75)) = 127.5 | 0 + 105 + (-2*(-5.25)) = 115.5
-            pitch_sx = self.x_range[0] + self.x_range[1] + (-2*(self.x_range[0]-pitch_x0))
+            # 0 + 120 + (-2*(0-3.75)) = 127.5 | 0 + 105 + (-2*(0-5.25)) = 115.5
+            pitch_sx = self.x_range_pitch[0] + self.x_range_pitch[1] + (-2 * (min(self.x_range_pitch) + pitch_x0))
             # 0 + 65 + (-2*(65 - 68.2)) = 71.4 | 80 + 0 (-2*(0 -3.75)) = 87.5
-            pitch_sy = self.y_range[0] + self.x_range[1] + (-2*(self.y_range[0]-pitch_x0))
+            pitch_sy = self.y_range_pitch[0] + self.y_range_pitch[1] + (-2 * (min(self.y_range_pitch) + pitch_y0))
 
             pitch = Pitch(pitch_color='grass', line_color='white', stripe=True)
-            fig, ax = pitch.draw()
+            fig_p, ax = pitch.draw()
         elif pitch_type == 'myPitch':
+            aa=True
             if pitch_x0 is None:
                 pitch_x0 = -5.25
             if pitch_y0 is None:
                 pitch_y0 = 68.2
-
-            pitch_sx = self.x_range[0] + self.x_range[1] + (-2*(self.x_range[0]-pitch_x0))
-            pitch_sy = self.y_range[0] + self.x_range[1] + (-2*(self.y_range[0]-pitch_x0))
+            pitch_sx = self.x_range_pitch[0] + self.x_range_pitch[1] + (-2 * (min(self.x_range_pitch) + pitch_x0))
+            pitch_sy = self.y_range_pitch[0] + self.y_range_pitch[1] + (-2 * (min(self.y_range_pitch) + pitch_y0))
             pitch = myPitch()
-            fig, ax = plt.subplots()
+            fig_p, ax = plt.subplots()
             pitch.plot_pitch(ax=ax)
-        fig.savefig('pitch.png', format='png', bbox_inches='tight', pad_inches=0)
+        else:
+            raise ValueError(f'You have to select a valid pitch type out of {supported_pitch_types} '
+                             f'so that a pitch can be plotted!')
+        fig_p.savefig('pitch.png', format='png', bbox_inches='tight', pad_inches=0)
         # load pitch as image
         img = Image.open('pitch.png')
 
@@ -381,17 +390,142 @@ class shot_data:
         # that 0,0 is at the corner of the actual pitch
         # this then requires an adaption of the size of the image by usually twice what was entered at x and y
         fig.add_layout_image(
-            dict(source=img,
-                 xref='x',
-                 yref='y',
-                 x=pitch_x0,
-                 y=-pitch_y0,
-                 sizex=pitch_sx,
-                 sizey=pitch_sy,
-                 sizing='stretch',
-                 opacity=1,
-                 layer='below')
-        )
+            dict(source=img, xref='x', yref='y', x=pitch_x0, y=pitch_y0, sizex=pitch_sx, sizey=pitch_sy,
+                 sizing='stretch', opacity=1, layer='below'))
 
+        # needed for positioning of added elements
+        xmax = max(self.x_range_pitch)
+        ymax = max(self.y_range_pitch)
 
+        # determine margins
+        if margins is None:
+            if pitch_type == 'mplsoccer':
+                margins = dict(l=0, r=0, b=10, t=30)
+            elif pitch_type == 'myPitch':
+                margins = dict(l=10, r=10, b=10, t=30)
+            else:
+                raise ValueError(f'You need to either select a supported pitch type from {supported_pitch_types} '
+                                 f'or specify the intended margins around the plot to "margins"')
 
+        # update layout
+        # width and height as multiple of pitch dimensions to maintain aspect ratio
+        # margins of paper around actual plot (keep space for header if intended
+        fig.update_layout(autosize=True, width=105 * size_multiplicator, height=65 * size_multiplicator,
+                          margin=margins,
+                          xaxis=dict(visible=axis_visible, autorange=True), yaxis=dict(visible=axis_visible, autorange=aa),
+                          title=title, title_font=dict(color=title_col, size=25), title_x=0.5, title_y=0.975,
+                          plot_bgcolor=background_col, paper_bgcolor=background_col, showlegend=False)
+
+        # add scatters in the corners = the easiest way to scale plot
+        fig.add_trace(go.Scatter(x=[self.x_range_pitch[0], self.x_range_pitch[1]],
+                                 y=[self.y_range_pitch[0], self.y_range_pitch[1]], hoverinfo='skip', mode='markers',
+                                 marker=dict(size=0, color='red ', opacity=0)))
+
+        # if selected display team logos
+        if home_image is not None or away_image is not None:
+            # determine positions if not specified
+            if pitch_type == 'mplsoccer':
+                if logo_x is None:
+                    logo_x = (0.4, 0.6)
+                if logo_y is None:
+                    logo_y = (0.025, 0.025)
+            elif pitch_type == 'myPitch':
+                if logo_x is None:
+                    logo_x = (0.4, 0.6)
+                if logo_y is None:
+                    logo_y = (0.975, 0.975)
+            elif (logo_x is None) and (logo_y is None):
+                raise ValueError(f"If you want the teams' logos displayed, you have to "
+                                 f'either select a pitch_type out of {supported_pitch_types}, currently {pitch_type},'
+                                 f' or specify the intended positioning via "home_image_x" and "home_image_y", '
+                                 f'currently {logo_x}, {logo_y}!')
+
+        if home_image is not None:
+            himg = Image.open(home_image)
+            fig.add_layout_image(
+                dict(source=himg, xref='x', yref='y', x=logo_x[0] * xmax, y=logo_y[0] * ymax, sizex=15, sizey=15,
+                     xanchor='center', sizing='stretch', opacity=0.9, layer='below'))
+
+        if away_image is not None:
+            aimg = Image.open(away_image)
+            fig.add_layout_image(
+                dict(source=aimg, xref='x', yref='y', x=logo_x[1] * xmax, y=logo_y[1] * ymax, sizex=15, sizey=15,
+                     xanchor='center', sizing='stretch', opacity=0.9, layer='below'))
+
+        # if selected display team names
+        if name_text:
+            # determine positions if not specified
+            if pitch_type == 'mplsoccer':
+                if name_text_x is None:
+                    name_text_x = (1 / 3, 2 / 3)
+                if name_text_y is None:
+                    name_text_y = (0.3, 0.3)
+            elif pitch_type == 'myPitch':
+                if name_text_x is None:
+                    name_text_x = (1 / 3, 2 / 3)
+                if name_text_y is None:
+                    name_text_y = (0.72, 0.68)
+            elif (name_text_x is None) and (name_text_y is None):
+                raise ValueError(f"If you want the teams' names to be placed as a text, you have to "
+                                 f'either select a pitch_type from {supported_pitch_types}, currently {pitch_type}, '
+                                 f'or specify the intended positioning via "name_text_x" and "name_text_y", currently '
+                                 f'{name_text_x}, {name_text_y}!')
+
+            fig.add_annotation(x=name_text_x[0] * xmax, y=name_text_y[0] * ymax, text=self.home_team, showarrow=False,
+                               font=dict(family="Arial", size=20, color=color1), opacity=0.75)
+            fig.add_annotation(x=name_text_x[1] * xmax, y=name_text_y[1] * ymax, text=self.away_team, showarrow=False,
+                               font=dict(family="Arial", size=20, color=color2), opacity=0.75)
+
+        # if selected display actual result
+        if result_text:
+            # determine positions if not specified
+            if pitch_type == 'mplsoccer':
+                if result_text_x is None:
+                    result_text_x = (0.4, 0.6)
+                if result_text_y is None:
+                    result_text_y = (0.5, 0.5)
+            elif pitch_type == 'myPitch':
+                if result_text_x is None:
+                    result_text_x = (0.4, 0.6)
+                if result_text_y is None:
+                    result_text_y = (0.5, 0.5)
+            elif (result_text_x is None) and (result_text_y is None):
+                raise ValueError(f'If you want the expected goals to be placed as a text, you have to '
+                                 f'either select a pitch_type from {supported_pitch_types}, currently {pitch_type}, '
+                                 f'or specify the intended positioning via "result_text_x" and "result_text_y", '
+                                 f'currently {result_text_x}, {result_text_y}!')
+
+            # determine goal count
+            ng1 = self.count_goals(team='home')
+            ng2 = self.count_goals(team='away')
+            fig.add_annotation(x=result_text_x[0] * xmax, y=result_text_y[0] * ymax, text=ng1, showarrow=False,
+                               font=dict(family="Arial", size=100, color=color1), opacity=0.75)
+            fig.add_annotation(x=result_text_x[1] * xmax, y=result_text_y[1] * ymax, text=ng2, showarrow=False,
+                               font=dict(family="Arial", size=100, color=color2), opacity=0.75)
+
+        if xg_text:
+            # determine positions if not specified
+            if pitch_type == 'mplsoccer':
+                if xg_text_x is None:
+                    xg_text_x = (0.4, 0.6)
+                if xg_text_y is None:
+                    xg_text_y = (0.8, 0.8)
+            elif pitch_type == 'myPitch':
+                if xg_text_x is None:
+                    xg_text_x = (0.4, 0.6)
+                if xg_text_y is None:
+                    xg_text_y = (0.2, 0.2)
+            elif (xg_text_x is None) and (xg_text_y is None):
+                raise ValueError(f'If you want the expected goals to be placed as a text, you have to '
+                                 f'either select a pitch_type from {supported_pitch_types}, currently {pitch_type}, '
+                                 f'or specify the intended positioning via "xg_text_x" and "xg_text_y", currently '
+                                 f'{xg_text_x}, {xg_text_y}!')
+
+            xg1 = str(self.xG_score(team='home'))
+            xg2 = str(self.xG_score(team='away'))
+            fig.add_annotation(x=xg_text_x[0] * xmax, y=xg_text_y[0] * ymax, text=xg1, showarrow=False,
+                               font=dict(family="Arial", size=40, color=color1), opacity=0.5)
+            fig.add_annotation(x=xg_text_x[1] * xmax, y=xg_text_y[1] * ymax, text=xg1, showarrow=False,
+                               font=dict(family="Arial", size=40, color=color2), opacity=0.5)
+
+        return fig
