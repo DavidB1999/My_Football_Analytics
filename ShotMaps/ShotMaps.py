@@ -39,7 +39,7 @@ class shot_data:
         self.x_range_pitch = x_range_pitch
         self.y_range_pitch = y_range_pitch
         self.mirror_away = mirror_away
-        # on initializing the data is rescaled but i can alaway initialize again based on org_data!
+        # on initializing the data is rescaled, but I can always initialize again based on org_data!
         self.data = self.rescale_shot_data()
 
     def __str__(self):
