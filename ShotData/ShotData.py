@@ -389,9 +389,9 @@ class shot_data:
         else:
             raise ValueError(f'You have to select a valid pitch type out of {supported_pitch_types} '
                              f'so that a pitch can be plotted!')
-        fig_p.savefig('pitch.png', format='png', bbox_inches='tight', pad_inches=0)
+        fig_p.savefig('images/pitch.png', format='png', bbox_inches='tight', pad_inches=0)
         # load pitch as image
-        img = Image.open('pitch.png')
+        img = Image.open('images/pitch.png')
 
         # add the image as background x and y should be subtracting the border of the pitch included in the image so
         # that 0,0 is at the corner of the actual pitch
@@ -560,7 +560,7 @@ class shot_data:
             grid_col = '#121212'
             text_col = '#b3b3b3'
         if design == 'fun':
-            ball_image_path = 'Kick.png'
+            ball_image_path = 'images/Kick.png'
             ball_size_x = 3
             ball_size_y = 0.175
             plot_col = '#e2eeff'
