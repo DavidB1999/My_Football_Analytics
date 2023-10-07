@@ -83,6 +83,25 @@ class pass_data():
         if self.x_range_data is None or self.y_range_data is None or self.x_range_pitch is None or self.y_range_pitch is None:
             raise ValueError(f'Oops! Something went wrong. The coordinates for rescaling are missing.')
 
+        # dimensions dictionary for convenience
+        dimensions = {self.y_col: {
+            'data': self.y_range_data,
+            'pitch': self.y_range_pitch},
+            self.x_col: {
+                'data': self.x_range_data,
+                'pitch': self.x_range_pitch}
+        }
+        for dim in dimensions.keys():
+            datamin = dimensions[dim]['data'][0]
+            datamax = dimensions[dim]['data'][1]
+            delta_data = datamax - datamin
+            dimensions[dim]['delta_data'] = delta_data
+            pitchmin = dimensions[dim]['pitch'][0]
+            pitchmax = dimensions[dim]['pitch'][1]
+            delta_pitch = pitchmax - pitchmin
+            dimensions[dim]['delta_pitch'] = delta_pitch
+            dimensions[dim]['scaling_factor'] = delta_pitch / delta_data
+
         # start and end location split into separate lists for both x and y
         # loop over pass location and access both x and y
         x1_org = []
