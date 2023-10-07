@@ -25,7 +25,7 @@ def free_data():
 # ------------------
 # events for a match
 # ------------------
-def match_events(match_id, event_filter=None):
+def match_events(match_id, event_filter=None, team_column='team', return_teams=True):
     # all events for the match
     if event_filter is None:
         events = sb.events(match_id=match_id)
@@ -33,7 +33,15 @@ def match_events(match_id, event_filter=None):
         raise ValueError(f'event filter needs to be one of {valid_events}. You supplied {event_filter}!')
     else:
         events = sb.events(match_id=match_id, split=True, flatten_attrs=False)[event_filter]
-    return events
+
+    if return_teams:
+        # get home and away team from lineup order!
+        xis = sb.events(match_id=match_id, split=True, flatten_attrs=False)['starting_xis']
+        teams = list(xis[team_column])
+        return events, teams
+    else:
+        return events
+
 
 # --------------------------------
 # events for an entire competition
@@ -56,9 +64,10 @@ def competition_events(country, division, season, gender, event_filter=None):
             events = events_dict[event_filter]
         return events, events_dict
 
+
 events, event_dict = competition_events(country="International",
-    division= "FIFA World Cup",
-    season="2022",
-    gender="male", event_filter='shots')
+                                        division="FIFA World Cup",
+                                        season="2022",
+                                        gender="male", event_filter='shots')
 
 print(events)

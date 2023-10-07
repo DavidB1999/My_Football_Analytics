@@ -11,49 +11,55 @@ import plotly.graph_objects as go
 from PIL import Image
 import numpy as np
 
+
 # ------------------------------------------------------------------------
 # shot data as its own class with functions to rescale and create shot map
 # ------------------------------------------------------------------------
 
 class shot_data:
     def __init__(self, data, data_source=None, x_range_data=None, y_range_data=None, team_column='team',
-                 x_col='x', y_col='y', xg_col='xG', minute_col='minute', result_col='result', player_col='player',
+                 x_col=None, y_col=None, xg_col=None, minute_col=None, result_col=None, player_col=None,
                  scale_to_pitch='mplsoccer', x_range_pitch=None, y_range_pitch=None,
-                 mirror_away=['x', 'y']):
+                 mirror_away=['x', 'y'], location_column=None, shot_column=None, xg_key=None, end_location_key=None,
+                 outcome_key=None, teams=None):
+        # we need these attributes later independent of data source
         self.org_data = data
         self.data_source = data_source
         self.x_range_data = x_range_data
         self.y_range_data = y_range_data
         self.team_column = team_column
         self.x_col = x_col
+        if self.x_col is None:
+            self.x_col = 'x'
         self.y_col = y_col
+        if self.y_col is None:
+            self.y_col = 'y'
         self.xg_col = xg_col
-        self.minute_col = minute_col
+        if self.xg_col is None:
+            self.xg_col = 'xG'
         self.result_col = result_col
+        if self.result_col is None:
+            self.result_col = 'result'
+        self.minute_col = minute_col
         self.player_col = player_col
-        self.home_team = data[self.team_column].unique()[0]
-        self.away_team = data[self.team_column].unique()[1]
+        if teams is None:  # if we do not supply home and away it will try to guess by order (Works for understat)
+            self.home_team = data[self.team_column].unique()[0]
+            self.away_team = data[self.team_column].unique()[1]
+        else:
+            self.home_team = teams[0]
+            self.away_team = teams[1]
         self.filter1 = data[self.team_column] == self.home_team
         self.filter2 = data[self.team_column] == self.away_team
         self.scale_to_pitch = scale_to_pitch
         self.x_range_pitch = x_range_pitch
         self.y_range_pitch = y_range_pitch
         self.mirror_away = mirror_away
-        # on initializing the data is rescaled, but I can always initialize again based on org_data!
-        self.data = self.rescale_shot_data()
+        self.location_column = location_column
+        self.shot_column = shot_column
+        self.xg_key = xg_key
+        self.end_location_key = end_location_key
+        self.outcome_key = outcome_key
 
-    def __str__(self):
-        return (
-            f"shot_data object of {self.data_source} of shape {self.data.shape}."
-        )
-
-    # --------------------------------------------------
-    # function to rescale data to a data range of choice
-    # --------------------------------------------------
-    def rescale_shot_data(self):
-
-        # deep copy to avoid changes on original data if not intended
-        data = self.org_data.copy(deep=True)
         # supported pitch types have a default data range to which data can be rescaled
         supported_pitch_types = ['mplsoccer', 'myPitch']
         if self.scale_to_pitch == 'mplsoccer':
@@ -71,21 +77,95 @@ class shot_data:
                              f'Neither did you supply custom ranges via "x_range_pitch" and "y_range_pitch"'
                              f'Either supply one of {supported_pitch_types} to "scale_to_pitch" or '
                              f'Supply tuples of data ranges to "x_range_pitch" and "y_range_pitch".')
-        supported_data_source = ['Understat']
+
+        supported_data_source = ['Understat', 'Statsbomb']
+
         if self.data_source == 'Understat':
             if self.x_range_data is None:
                 self.x_range_data = (0, 1)
-            else:
-                self.x_range_data = self.x_range_data
             if self.y_range_data is None:
                 self.y_range_data = (0, 1)
-            else:
-                self.y_range_data = self.y_range_data
+            if self.minute_col is None:
+                self.minute_col = 'minute'
+            if self.result_col is None:
+                self.result_col = 'result'
+            if self.player_col is None:
+                self.player_col = 'player'
+            if self.team_column is None:
+                self.team_column = 'team'
+            if self.mirror_away is None:
+                self.mirror_away = ['x', 'y']
+
+        elif self.data_source == 'Statsbomb':
+            if self.x_range_data is None:
+                self.x_range_data = (0, 120)
+            if self.y_range_data is None:
+                self.y_range_data = (80, 0)
+            if self.location_column is None:
+                self.location_column = 'location'
+            if self.minute_col is None:
+                self.minute_col = 'minute'
+            if self.team_column is None:
+                self.team_column = 'team'
+            if self.player_col is None:
+                self.player_col = 'player'
+            if self.shot_column is None:
+                self.shot_column = 'shot'
+            if self.outcome_key is None:
+                self.outcome_key = 'outcome'
+            if self.end_location_key is None:
+                self.end_location_key = 'end_location'
+            if self.xg_key is None:
+                self.xg_key = 'statsbomb_xg'
+            if self.mirror_away is None:
+                self.mirror_away = ['x', 'y']
+
         elif self.x_range_data is None or self.y_range_data is None:
             raise ValueError(f'You have not selected a data source which which would indicate an original scale.'
                              f'Neither did you supply custom ranges via "x_range_data" and "y_range_data"'
                              f'Either supply one of {supported_data_source} to "data_source" or '
                              f'Supply tuples of data ranges to "x_range_data" and "x_range_data".')
+
+        # on initializing the data is rescaled, but I can always initialize again based on org_data!
+        self.data = self.rescale_shot_data()
+
+    def __str__(self):
+        return (
+            f"shot_data object of {self.data_source} of shape {self.data.shape}."
+        )
+
+    # --------------------------------------------------
+    # function to rescale data to a data range of choice
+    # --------------------------------------------------
+    def rescale_shot_data(self):
+
+        # deep copy to avoid changes on original data if not intended
+        data = self.org_data.copy(deep=True)
+
+        # dimensions dictionary for convenience
+        dimensions = {self.y_col: {
+            'data': self.y_range_data,
+            'pitch': self.y_range_pitch},
+            self.x_col: {
+                'data': self.x_range_data,
+                'pitch': self.x_range_pitch}
+        }
+        for dim in dimensions.keys():
+            datamin = dimensions[dim]['data'][0]
+            datamax = dimensions[dim]['data'][1]
+            delta_data = datamax - datamin
+            dimensions[dim]['delta_data'] = delta_data
+            pitchmin = dimensions[dim]['pitch'][0]
+            pitchmax = dimensions[dim]['pitch'][1]
+            delta_pitch = pitchmax - pitchmin
+            dimensions[dim]['delta_pitch'] = delta_pitch
+
+            # print(delta_data, delta_pitch)
+            dimensions[dim]['scaling_factor'] = delta_pitch / delta_data
+            # print(scaling_factor)
+            # print(data0)
+            # print(data1)
+        #print(dimensions)
 
         # this works without data_source being supplied but this nevertheless
         # requires a format similar to understat shot data
@@ -94,63 +174,102 @@ class shot_data:
             # convert to float / int
             data[self.x_col] = data[self.x_col].astype(float)
             data[self.y_col] = data[self.y_col].astype(float)
-            data[self.xg_col] = round(data[self.xg_col].astype(float), 2)
+            data[self.xg_col] = data[self.xg_col].astype(float)
             data[self.minute_col] = data[self.minute_col].astype(int)
 
-            # dimensions dictionary for convenience
-            dimensions = {'y': {
-                'data': self.y_range_data,
-                'pitch': self.y_range_pitch},
-                'x': {
-                    'data': self.x_range_data,
-                    'pitch': self.x_range_pitch}
-            }
             # for both the x and y coordinates
             for dim in dimensions.keys():
-                data0 = dimensions[dim]['data'][0]
-                data1 = dimensions[dim]['data'][1]
-                delta_data = data1 - data0
-                pitch0 = dimensions[dim]['pitch'][0]
-                pitch1 = dimensions[dim]['pitch'][1]
-                delta_pitch = pitch1 - pitch0
-                # print(delta_data, delta_pitch)
-                scaling_factor = delta_pitch / delta_data
-                # print(scaling_factor)
-                # print(data0)
-                # print(data1)
-
                 # if the data we want to rescale, is oriented in the usual direction (left to right, bottom to top)
                 # we calculate like this
-                if delta_data > 0:
+                if dimensions[dim]['delta_data'] > 0:
                     # rescale home team coordinates
                     data.loc[self.filter1, dim] = data.loc[self.filter1, dim].apply(
-                        lambda x: pitch0 + x * scaling_factor)
+                        lambda x: dimensions[dim]['pitch'][0] + x * dimensions[dim]['scaling_factor'])
 
                     # rescale away team and if necessary mirror
                     if dim in self.mirror_away:
                         data.loc[self.filter2, dim] = data.loc[self.filter2, dim].apply(
-                            lambda x: pitch1 - x * scaling_factor)
+                            lambda x: dimensions[dim]['pitch'][1] - x * dimensions[dim]['scaling_factor'])
                     else:
                         data.loc[self.filter2, dim] = data.loc[self.filter2, dim].apply(
-                            lambda x: pitch0 + x * scaling_factor)
+                            lambda x: dimensions[dim]['pitch'][0] + x * dimensions[dim]['scaling_factor'])
 
                 # if the data we want to rescale is mirrored in dim
                 # we calculate like this
-                elif delta_data < 0:
+                elif dimensions[dim]['delta_data'] < 0:
                     # rescale home team coordinates
                     data.loc[self.filter1, dim] = data.loc[self.filter1, dim].apply(
-                        lambda x: pitch1 + x * scaling_factor)
+                        lambda x: dimensions[dim]['pitch'][1] + x * dimensions[dim]['scaling_factor'])
 
                     # rescale away team and if necessary mirror
                     if dim in self.mirror_away:
                         data.loc[self.filter2, dim] = data.loc[self.filter2, dim].apply(
-                            lambda x: pitch0 - x * scaling_factor)
+                            lambda x: dimensions[dim]['pitch'][0] - x * dimensions[dim]['scaling_factor'])
                     else:
                         data.loc[self.filter2, dim] = data.loc[self.filter2, dim].apply(
-                            lambda x: pitch1 + x * scaling_factor)
+                            lambda x: dimensions[dim]['pitch'][1] + x * dimensions[dim]['scaling_factor'])
+        elif self.data_source == 'Statsbomb':
+            # collect relevant columns
+            player = data[self.player_col]
+            minute = data[self.minute_col]
+            team = data[self.team_column]
+            result = []
+            xG = []
+            for s in range(len(data)):
+                result.append(data[self.shot_column][s][self.outcome_key]['name'])
+                xG.append(float(data[self.shot_column][s][self.xg_key]))
+
+            # location split into separate lists for both x and y
+            # loop over pass location and access both x and y
+            x_org = []
+            y_org = []
+
+            for p in data[self.location_column]:
+                x_org.append(float(p[0]))
+                y_org.append(float(p[1]))
+
+            sd = pd.DataFrame(zip(player, minute, team, result, x_org, y_org, xG),
+                              columns=[self.player_col, self.minute_col, self.team_column, self.result_col,
+                                       self.x_col, self.y_col, self.xg_col])
+
+            # for both the x and y coordinates
+            for dim in dimensions.keys():
+                # if the data we want to rescale, is oriented in the usual direction (left to right, bottom to top)
+                # we calculate like this
+                if dimensions[dim]['delta_data'] > 0:
+                    # rescale home team coordinates
+                    sd.loc[self.filter1, dim] = sd.loc[self.filter1, dim].apply(
+                        lambda x: dimensions[dim]['pitch'][0] + x * dimensions[dim]['scaling_factor'])
+
+                    # rescale away team and if necessary mirror
+                    if dim in self.mirror_away:
+                        sd.loc[self.filter2, dim] = sd.loc[self.filter2, dim].apply(
+                            lambda x: dimensions[dim]['pitch'][1] - x * dimensions[dim]['scaling_factor'])
+                    else:
+                        sd.loc[self.filter2, dim] = sd.loc[self.filter2, dim].apply(
+                            lambda x: dimensions[dim]['pitch'][0] + x * dimensions[dim]['scaling_factor'])
+
+                # if the data we want to rescale is mirrored in dim
+                # we calculate like this
+                elif dimensions[dim]['delta_data'] < 0:
+                    # rescale home team coordinates
+                    sd.loc[self.filter1, dim] = sd.loc[self.filter1, dim].apply(
+                        lambda x: dimensions[dim]['pitch'][1] + x * dimensions[dim]['scaling_factor'])
+
+                    # rescale away team and if necessary mirror
+                    if dim in self.mirror_away:
+                        sd.loc[self.filter2, dim] = sd.loc[self.filter2, dim].apply(
+                            lambda x: dimensions[dim]['pitch'][0] - x * dimensions[dim]['scaling_factor'])
+                    else:
+                        sd.loc[self.filter2, dim] = sd.loc[self.filter2, dim].apply(
+                            lambda x: dimensions[dim]['pitch'][1] + x * dimensions[dim]['scaling_factor'])
+
+            data = sd
+
         else:  # currently "Understat" is the only option included (could add others like Statsbomb)
             raise ValueError(
-                f'{self.data_source} not supported. At this point, "Understat" is the only supported data format.')
+                f'{self.data_source} not supported. At this point, Statsbomb and Understat are the only supported '
+                f'data formats.')
 
         return data
 
@@ -190,7 +309,7 @@ class shot_data:
     # --------------------------------------------------------------
     # function to return list of cumulative sum for list of numerics
     # --------------------------------------------------------------
-    def nums_cumulative_sum(self,num_list):
+    def nums_cumulative_sum(self, num_list):
         return [sum(num_list[:i + 1]) for i in range(len(num_list))]
 
     # ----------------------------------
@@ -341,9 +460,13 @@ class shot_data:
                             home_image=None, away_image=None, logo_x=None, logo_y=None,
                             axis_visible=False):
         supported_pitch_types = ['mplsoccer', 'myPitch']
-        markers = {'SavedShot': "triangle-up", 'MissedShots': 'circle', 'BlockedShot': "triangle-down", 'Goal': 'star',
+        if self.data_source == 'Understat':
+            markers = {'SavedShot': "triangle-up", 'MissedShots': 'circle', 'BlockedShot': "triangle-down", 'Goal': 'star',
                    'OwnGoal': 'X', 'ShotOnPost': "hexagon"}
-
+        elif self.data_source == 'Statsbomb':
+            markers = {'Saved': "triangle-up", 'Saved Off T': "triangle-up", 'Saved To Post': "triangle-up",
+                       'Off T': 'circle', 'Wayward': "circle", 'Blocked': "triangle-down", 'Goal': 'star',
+                   'OwnGoal': 'X', 'Post': "hexagon"}
         # get symbols / markers in correct order based on fixed dictionary
         symbols = []
         for result in self.data[self.result_col].unique():
@@ -529,11 +652,11 @@ class shot_data:
                                  f'or specify the intended positioning via "xg_text_x" and "xg_text_y", currently '
                                  f'{xg_text_x}, {xg_text_y}!')
 
-            xg1 = str(self.xG_score(team='home'))
-            xg2 = str(self.xG_score(team='away'))
+            xg1 = str(round(self.xG_score(team='home'), 2))
+            xg2 = str(round(self.xG_score(team='away'), 2))
             fig.add_annotation(x=xg_text_x[0] * xmax, y=xg_text_y[0] * ymax, text=xg1, showarrow=False,
                                font=dict(family="Arial", size=40, color=color1), opacity=0.5)
-            fig.add_annotation(x=xg_text_x[1] * xmax, y=xg_text_y[1] * ymax, text=xg1, showarrow=False,
+            fig.add_annotation(x=xg_text_x[1] * xmax, y=xg_text_y[1] * ymax, text=xg2, showarrow=False,
                                font=dict(family="Arial", size=40, color=color2), opacity=0.5)
 
         return fig
@@ -543,7 +666,7 @@ class shot_data:
     # --------------------------------
 
     def xg_chart(self, color1='red', color2='blue', Title=None, text_col='white', font_type='Rockwell',
-                 grid_visible=True, grid_col='#a3a3a3', plot_col='#999999', ball_image_path='Football3.png',
+                 grid_visible=True, grid_col='#a3a3a3', plot_col='#999999', ball_image_path='images/Football3.png',
                  display_score=True, home_image=None, away_image=None, design=None, ball_size_x=1.75, ball_size_y=0.1):
         if design == 'light':
             text_col = 'black'
@@ -567,9 +690,8 @@ class shot_data:
             text_col = '#0f403f'
             grid_col = '#ffdef2'
 
-
         # use the org data for xG with all decimals
-        df = self.org_data.copy(deep=True)
+        df = self.data
         # min as integer and xG as float
         df[self.minute_col] = df[self.minute_col].astype(int)
         df[self.xg_col] = df[self.xg_col].astype(float)
@@ -589,7 +711,8 @@ class shot_data:
         if "OwnGoal" in df[self.result_col].values:
             OGs = np.where(df[self.result_col] == "OwnGoal")[0]
             for og in OGs:
-                df[self.team_column][og] = self.home_team if df[self.team_column][og] == self.away_team else self.away_team
+                df[self.team_column][og] = self.home_team if df[self.team_column][
+                                                                 og] == self.away_team else self.away_team
 
         # sort by team and minute within team
         order_by_custom = pd.CategoricalDtype([self.home_team, self.away_team], ordered=True)
@@ -613,14 +736,14 @@ class shot_data:
 
         # update layout
         fig.update_layout(plot_bgcolor=plot_col, paper_bgcolor=plot_col, showlegend=False,
-                          title={'text': Title, 'y':0.95, 'x':0.5, 'yanchor':'top', 'xanchor':'center',
-                                 'font_size':20},
-                          font={'family':font_type, 'color':text_col},
-                          hoverlabel={'font_size':16},
-                          xaxis=dict(tickmode='linear', tick0=0, dtick=15, range=[0,max(df[self.minute_col])],
+                          title={'text': Title, 'y': 0.95, 'x': 0.5, 'yanchor': 'top', 'xanchor': 'center',
+                                 'font_size': 20},
+                          font={'family': font_type, 'color': text_col},
+                          hoverlabel={'font_size': 16},
+                          xaxis=dict(tickmode='linear', tick0=0, dtick=15, range=[0, max(df[self.minute_col])],
                                      showgrid=grid_visible, showline=False, zeroline=False, tickcolor=grid_col,
                                      gridcolor=grid_col),
-                          yaxis=dict(tickmode='linear', tick0=0, dtick=0.5, range=[0,round(max(df['xG_cum']))+0.5],
+                          yaxis=dict(tickmode='linear', tick0=0, dtick=0.5, range=[0, round(max(df['xG_cum'])) + 0.5],
                                      showgrid=grid_visible, showline=False, zeroline=False, tickcolor=grid_col,
                                      gridcolor=grid_col)
                           )
@@ -632,7 +755,8 @@ class shot_data:
             if df[self.result_col][i] == "Goal" or df[self.result_col][i] == "OwnGoal":
                 fig.add_layout_image(
                     dict(source=ball, xref='x', yref='y', x=df[self.minute_col][i], y=df['xG_cum'][i],
-                         sizex=ball_size_x, sizey=ball_size_y, xanchor='center', yanchor='middle', sizing='stretch', opacity=1,
+                         sizex=ball_size_x, sizey=ball_size_y, xanchor='center', yanchor='middle', sizing='stretch',
+                         opacity=1,
                          layer='above'))
 
         # display final score if selcted
@@ -641,27 +765,20 @@ class shot_data:
             ng1 = self.count_goals(team='home')
             ng2 = self.count_goals(team='away')
 
-            fig.add_annotation(x=7.5, y=round(max(df.xG_cum)) - 0.25, text=ng1,showarrow=False,
+            fig.add_annotation(x=7.5, y=round(max(df.xG_cum)) - 0.25, text=ng1, showarrow=False,
                                font=dict(family='Rockwell', size=40, color=color1), opacity=1)
-            fig.add_annotation(x=22.5, y=round(max(df.xG_cum)) - 0.25, text=ng2,showarrow=False,
+            fig.add_annotation(x=22.5, y=round(max(df.xG_cum)) - 0.25, text=ng2, showarrow=False,
                                font=dict(family='Rockwell', size=40, color=color2), opacity=1)
 
         # display team logos if supplied
         if home_image is not None and away_image is not None:
             himg = Image.open(home_image)
             aimg = Image.open(away_image)
-            fig.add_layout_image(dict(source=himg, xref='x', yref='y', x=7.5, y=round(max(df.xG_cum))+0.25,
-                     sizex=15, sizey=0.5, xanchor='center', yanchor='middle', sizing='stretch',
-                     opacity=0.9, layer='below'))
-            fig.add_layout_image(dict(source=aimg, xref='x', yref='y', x=22.5, y=round(max(df.xG_cum))+0.25,
-                     sizex=15, sizey=0.5, xanchor='center', yanchor='middle', sizing='stretch',
-                     opacity=0.9, layer='below'))
+            fig.add_layout_image(dict(source=himg, xref='x', yref='y', x=7.5, y=round(max(df.xG_cum)) + 0.25,
+                                      sizex=15, sizey=0.5, xanchor='center', yanchor='middle', sizing='stretch',
+                                      opacity=0.9, layer='below'))
+            fig.add_layout_image(dict(source=aimg, xref='x', yref='y', x=22.5, y=round(max(df.xG_cum)) + 0.25,
+                                      sizex=15, sizey=0.5, xanchor='center', yanchor='middle', sizing='stretch',
+                                      opacity=0.9, layer='below'))
 
         return fig
-
-
-
-
-
-
-
