@@ -17,17 +17,17 @@ import numpy as np
 # ------------------------------------------------------------------------
 
 class shot_data:
-    def __init__(self, data, data_source=None, x_range_data=None, y_range_data=None, team_column='team',
+    def __init__(self, data, data_source=None, x_range_data=None, y_range_data=None, team_col='team',
                  x_col=None, y_col=None, xg_col=None, minute_col=None, result_col=None, player_col=None,
                  scale_to_pitch='mplsoccer', x_range_pitch=None, y_range_pitch=None,
-                 mirror_away=['x', 'y'], location_column=None, shot_column=None, xg_key=None, end_location_key=None,
+                 mirror_away=['x', 'y'], location_col=None, shot_col=None, xg_key=None, end_location_key=None,
                  outcome_key=None, teams=None):
         # we need these attributes later independent of data source
         self.org_data = data
         self.data_source = data_source
         self.x_range_data = x_range_data
         self.y_range_data = y_range_data
-        self.team_column = team_column
+        self.team_column = team_col
         self.x_col = x_col
         if self.x_col is None:
             self.x_col = 'x'
@@ -42,20 +42,12 @@ class shot_data:
             self.result_col = 'result'
         self.minute_col = minute_col
         self.player_col = player_col
-        if teams is None:  # if we do not supply home and away it will try to guess by order (Works for understat)
-            self.home_team = data[self.team_column].unique()[0]
-            self.away_team = data[self.team_column].unique()[1]
-        else:
-            self.home_team = teams[0]
-            self.away_team = teams[1]
-        self.filter1 = data[self.team_column] == self.home_team
-        self.filter2 = data[self.team_column] == self.away_team
         self.scale_to_pitch = scale_to_pitch
         self.x_range_pitch = x_range_pitch
         self.y_range_pitch = y_range_pitch
         self.mirror_away = mirror_away
-        self.location_column = location_column
-        self.shot_column = shot_column
+        self.location_column = location_col
+        self.shot_column = shot_col
         self.xg_key = xg_key
         self.end_location_key = end_location_key
         self.outcome_key = outcome_key
@@ -125,6 +117,16 @@ class shot_data:
                              f'Neither did you supply custom ranges via "x_range_data" and "y_range_data"'
                              f'Either supply one of {supported_data_source} to "data_source" or '
                              f'Supply tuples of data ranges to "x_range_data" and "x_range_data".')
+
+        if teams is None:  # if we do not supply home and away it will try to guess by order (Works for understat)
+            self.home_team = data[self.team_column].unique()[0]
+            self.away_team = data[self.team_column].unique()[1]
+        else:
+            self.home_team = teams[0]
+            self.away_team = teams[1]
+        self.filter1 = data[self.team_column] == self.home_team
+        self.filter2 = data[self.team_column] == self.away_team
+
 
         # on initializing the data is rescaled, but I can always initialize again based on org_data!
         self.data = self.rescale_shot_data()
@@ -266,7 +268,7 @@ class shot_data:
 
             data = sd
 
-        else:  # currently "Understat" is the only option included (could add others like Statsbomb)
+        else:  # currently "Understat" and "Statsbomb" are the only options included
             raise ValueError(
                 f'{self.data_source} not supported. At this point, Statsbomb and Understat are the only supported '
                 f'data formats.')
