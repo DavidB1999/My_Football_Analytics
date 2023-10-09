@@ -19,7 +19,7 @@ import re
 
 class pass_data():
 
-    def __init__(self, data, data_source, x_range_data=None, y_range_data=None, team_col='team',
+    def __init__(self, data, data_source=None, x_range_data=None, y_range_data=None, team_col='team',
                  location_col=None, end_location_key=None, pass_col=None, player_col=None, teams=None,
                  scale_to_pitch='mplsoccer', x_range_pitch=None, y_range_pitch=None, rel_eve_col=None,
                  mirror_away=['x', 'y'], type_key=None, outcome_key=None, minute_col=None, second_col=None,
@@ -61,8 +61,14 @@ class pass_data():
                 self.end_location_key = 'end_location'
             if self.team_column is None:
                 self.team_column = 'team'
+            if self.player_column is None:
+                self.player_column = 'player'
             if self.pass_column is None:
                 self.pass_column = 'pass'
+            if self.minute_column is None:
+                self.minute_column = 'minute'
+            if self.second_column is None:
+                self.second_column = 'second'
             if self.type_key is None:
                 self.type_key = 'type'
             if self.outcome_key is None:
@@ -96,6 +102,9 @@ class pass_data():
         else:
             self.home_team = teams[0]
             self.away_team = teams[1]
+
+        self.filter1 = data[self.team_column] == self.home_team
+        self.filter2 = data[self.team_column] == self.away_team
 
         supported_pitch_types = ['mplsoccer', 'myPitch']
         if self.scale_to_pitch == 'mplsoccer':
@@ -131,10 +140,10 @@ class pass_data():
             raise ValueError(f'Oops! Something went wrong. The coordinates for rescaling are missing.')
 
         # dimensions dictionary for convenience
-        dimensions = {self.y_name: {
+        dimensions = {'y': {
             'data': self.y_range_data,
             'pitch': self.y_range_pitch},
-            self.x_name: {
+            'x': {
                 'data': self.x_range_data,
                 'pitch': self.x_range_pitch}
         }
@@ -151,7 +160,7 @@ class pass_data():
 
         if self.data_source == 'Statsbomb':
             # collect relevant columns
-            player = data[self.player_col]
+            player = data[self.player_column]
             team = data[self.team_column]
             minute = data[self.minute_column]
             second = data[self.second_column]
@@ -164,6 +173,7 @@ class pass_data():
             shot_assist = []
             goal_assist = []
 
+            # print(len(data))
             for p in range(len(data)):
                 try:
                     outcome.append(data[self.pass_column][p][self.outcome_key]['name'])
@@ -172,85 +182,88 @@ class pass_data():
                 try:
                     type.append(data[self.pass_column][p][self.type_key]['name'])
                 except:
-                    outcome.append('Regular')
-                if data[self.pass_column][p][self.cross_key]:
-                    cross.append(True)
-                else:
+                    type.append('Regular')
+                try:
+                    cross.append(data[self.pass_column][p][self.cross_key])
+                except:
                     cross.append(False)
-                if data[self.pass_column][p][self.cutback_key]:
-                    cutback.append(True)
-                else:
+                try:
+                    cutback.append(data[self.pass_column][p][self.cutback_key])
+                except:
                     cutback.append(False)
-                if data[self.pass_column][p][self.switch_key]:
-                    switch.append(True)
-                else:
+                try:
+                    switch.append(data[self.pass_column][p][self.switch_key])
+                except:
                     switch.append(False)
-                if data[self.pass_column][p][self.shot_ass_key]:
-                    shot_assist.append(True)
-                else:
+                try:
+                    shot_assist.append(data[self.pass_column][p][self.shot_ass_key])
+                except:
                     shot_assist.append(False)
-                if data[self.pass_column][p][self.goal_ass_key]:
-                    goal_assist.append(True)
-                else:
+                try:
+                    goal_assist.append(data[self.pass_column][p][self.goal_ass_key])
+                except:
                     goal_assist.append(False)
+
+
+            # start and end location split into separate lists for both x and y
+            # loop over pass location and access both x and y
+            x1_org = []
+            x2_org = []
+            y1_org = []
+            y2_org = []
+
+            for p in data[self.location_column]:
+                x1_org.append(float(p[0]))
+                y1_org.append(float(p[1]))
+            for p in data[
+                self.pass_column]:  # access the dictionary stored at column 'pass' and get end_location by key
+                el = p[self.end_location_key]
+                x2_org.append(float(el[0]))
+                y2_org.append(float(el[1]))
+
+            pada = pd.DataFrame(zip(player, minute, second, team, outcome, type, x1_org, y1_org, x2_org, y2_org,
+                                    cross, cutback, switch, shot_assist, goal_assist, related_events),
+                                columns=[self.player_column, self.minute_column, self.second_column, self.team_column,
+                                         self.outcome_key, self.type_key, 'x_initial', 'y_initial', 'x_received',
+                                         'y_received', self.cross_key, self.cutback_key, self.switch_key,
+                                         self.shot_ass_key, self.goal_ass_key, self.rel_eve_column])
+            coordinates = ['x_initial', 'y_initial', 'x_received', 'y_received']
+
+            for c in coordinates:
+                dim = re.sub(pattern='_.*', repl='', string=c)
+                if dimensions[dim]['delta_data'] > 0:
+                    # rescale home team coordinates
+                    pada.loc[self.filter1, c] = pada.loc[self.filter1, c].apply(
+                        lambda x: dimensions[dim]['pitch'][0] + x * dimensions[dim]['scaling_factor'])
+
+                    # rescale away team and if necessary mirror
+                    if dim in self.mirror_away:
+                        pada.loc[self.filter2, c] = pada.loc[self.filter2, c].apply(
+                            lambda x: dimensions[dim]['pitch'][1] - x * dimensions[dim]['scaling_factor'])
+                    else:
+                        pada.loc[self.filter2, c] = pada.loc[self.filter2, c].apply(
+                            lambda x: dimensions[dim]['pitch'][0] + x * dimensions[dim]['scaling_factor'])
+
+                # if the data we want to rescale is mirrored in dim
+                # we calculate like this
+                elif dimensions[dim]['delta_data'] < 0:
+                    # rescale home team coordinates
+                    pada.loc[self.filter1, c] = pada.loc[self.filter1, c].apply(
+                        lambda x: dimensions[dim]['pitch'][1] + x * dimensions[dim]['scaling_factor'])
+
+                    # rescale away team and if necessary mirror
+                    if dim in self.mirror_away:
+                        pada.loc[self.filter2, c] = pada.loc[self.filter2, c].apply(
+                            lambda x: dimensions[dim]['pitch'][0] - x * dimensions[dim]['scaling_factor'])
+                    else:
+                        pada.loc[self.filter2, c] = pada.loc[self.filter2, c].apply(
+                            lambda x: dimensions[dim]['pitch'][1] + x * dimensions[dim]['scaling_factor'])
+
+                data = pada
 
         else:  # currently "Statsbomb" is the only option included (could add others like Statsbomb)
             raise ValueError(
                 f'{self.data_source} not supported. At this point, Statsbomb is the only supported '
                 f'data format.')
 
-        # start and end location split into separate lists for both x and y
-        # loop over pass location and access both x and y
-        x1_org = []
-        x2_org = []
-        y1_org = []
-        y2_org = []
-
-        for p in data[self.location_column]:
-            x1_org.append(float(p[0]))
-            y1_org.append(float(p[1]))
-        for p in data[self.pass_column]:  # access the dictionary stored at column 'pass' and get end_location by key
-            el = p[self.end_location_key]
-            x2_org.append(float(el[0]))
-            y2_org.append(float(el[1]))
-
-        pada = pd.DataFrame(zip(player, minute, second, team, outcome, type, x1_org, y1_org, x2_org, y2_org,
-                                     cross, cutback, switch, shot_assist, goal_assist, related_events),
-                                 columns=[self.player_col, self.minute_col, self.second_column, self.team_column,
-                                          self.outcome_key, self.type_key, 'x_initial', 'y_initial', 'x_received',
-                                          'y_received', self.cross_key, self.cutback_key, self.switch_key,
-                                          self.shot_ass_key, self.goal_ass_key, self.rel_eve_column])
-
-        coordinates = ['x_initial', 'y_initial', 'x_received', 'y_received']
-
-        for c in coordinates:
-            dim = re.sub(pattern='_.*', repl='', string=c)
-            if dimensions[dim]['delta_data'] > 0:
-                # rescale home team coordinates
-                pada.loc[self.filter1, c] = pada.loc[self.filter1, c].apply(
-                    lambda x: dimensions[dim]['pitch'][0] + x * dimensions[dim]['scaling_factor'])
-
-                # rescale away team and if necessary mirror
-                if dim in self.mirror_away:
-                    pada.loc[self.filter2, c] = pada.loc[self.filter2, c].apply(
-                        lambda x: dimensions[dim]['pitch'][1] - x * dimensions[dim]['scaling_factor'])
-                else:
-                    pada.loc[self.filter2, c] = pada.loc[self.filter2, c].apply(
-                        lambda x: dimensions[dim]['pitch'][0] + x * dimensions[dim]['scaling_factor'])
-
-            # if the data we want to rescale is mirrored in dim
-            # we calculate like this
-            elif dimensions[dim]['delta_data'] < 0:
-                # rescale home team coordinates
-                pada.loc[self.filter1, c] = pada.loc[self.filter1, c].apply(
-                    lambda x: dimensions[dim]['pitch'][1] + x * dimensions[dim]['scaling_factor'])
-
-                # rescale away team and if necessary mirror
-                if dim in self.mirror_away:
-                    pada.loc[self.filter2, c] = pada.loc[self.filter2, c].apply(
-                        lambda x: dimensions[dim]['pitch'][0] - x * dimensions[dim]['scaling_factor'])
-                else:
-                    pada.loc[self.filter2, c] = pada.loc[self.filter2, c].apply(
-                        lambda x: dimensions[dim]['pitch'][1] + x * dimensions[dim]['scaling_factor'])
-
-            data = pada
+        return data
