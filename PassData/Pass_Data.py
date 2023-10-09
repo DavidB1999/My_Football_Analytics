@@ -22,6 +22,7 @@ class pass_data():
                  location_column=None, end_location_key=None, pass_column=None,
                  scale_to_pitch='mplsoccer', x_range_pitch=None, y_range_pitch=None,
                  mirror_away=['x', 'y'], columns_to_keep=None):
+        # We need these attributes later independent of data source!
         self.org_data = data
         self.data_source = data_source
         self.x_range_data = x_range_data
