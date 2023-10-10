@@ -23,7 +23,8 @@ class pass_data():
                  location_col=None, end_location_key=None, pass_col=None, player_col=None, teams=None,
                  scale_to_pitch='mplsoccer', x_range_pitch=None, y_range_pitch=None, rel_eve_col=None,
                  mirror_away=['x', 'y'], type_key=None, outcome_key=None, minute_col=None, second_col=None,
-                 shot_ass_key=None, goal_ass_key=None, cross_key=None, cutback_key=None, switch_key=None):
+                 shot_ass_key=None, goal_ass_key=None, cross_key=None, cutback_key=None, switch_key=None,
+                 play_pattern_col=None, half_col=None):
 
         supported_data_sources = ['Statsbomb']
 
@@ -51,6 +52,8 @@ class pass_data():
         self.cross_key = cross_key
         self.cutback_key = cutback_key
         self.switch_key = switch_key
+        self.play_pattern_column = play_pattern_col
+        self.half_column = half_col
 
         # usually in Statsbomb both teams play both halves left to right (0 to 120) and there are certain naming
         # conventions. These will be used unless something else is explicitly specified
@@ -75,10 +78,14 @@ class pass_data():
                 self.outcome_key = 'outcome'
             if self.rel_eve_column is None:
                 self.rel_eve_column = 'related_events'
+            if self.play_pattern_column is None:
+                self.play_pattern_column = 'play_pattern'
+            if self.half_column is None:
+                self.half_column = 'period'
             if self.shot_ass_key is None:
-                self.shot_ass_key = 'shot-assist'
+                self.shot_ass_key = 'shot_assist'
             if self.goal_ass_key is None:
-                self.goal_ass_key = 'goal-assist'
+                self.goal_ass_key = 'goal_assist'
             if self.cross_key is None:
                 self.cross_key = 'cross'
             if self.switch_key is None:
@@ -131,6 +138,9 @@ class pass_data():
             f"pass_data object of {self.data_source} of shape {self.data.shape}."
         )
 
+    # --------------------------------------------------
+    # function to rescale data to a data range of choice
+    # --------------------------------------------------
     def rescale_pass_data(self):
 
         # deep copy to avoid changes on original data if not intended
@@ -164,7 +174,9 @@ class pass_data():
             team = data[self.team_column]
             minute = data[self.minute_column]
             second = data[self.second_column]
+            period = data[self.half_column]
             related_events = data[self.rel_eve_column]
+            play_pattern = data[self.play_pattern_column]
             outcome = []
             type = []
             cross = []
@@ -204,7 +216,6 @@ class pass_data():
                 except:
                     goal_assist.append(False)
 
-
             # start and end location split into separate lists for both x and y
             # loop over pass location and access both x and y
             x1_org = []
@@ -221,12 +232,13 @@ class pass_data():
                 x2_org.append(float(el[0]))
                 y2_org.append(float(el[1]))
 
-            pada = pd.DataFrame(zip(player, minute, second, team, outcome, type, x1_org, y1_org, x2_org, y2_org,
-                                    cross, cutback, switch, shot_assist, goal_assist, related_events),
-                                columns=[self.player_column, self.minute_column, self.second_column, self.team_column,
-                                         self.outcome_key, self.type_key, 'x_initial', 'y_initial', 'x_received',
-                                         'y_received', self.cross_key, self.cutback_key, self.switch_key,
-                                         self.shot_ass_key, self.goal_ass_key, self.rel_eve_column])
+            pada = pd.DataFrame(zip(player, period, minute, second, team, outcome, type, x1_org, y1_org, x2_org, y2_org,
+                                    cross, cutback, switch, shot_assist, goal_assist, play_pattern, related_events),
+                                columns=[self.player_column, self.half_column, self.minute_column, self.second_column,
+                                         self.team_column, self.outcome_key, self.type_key, 'x_initial', 'y_initial',
+                                         'x_received', 'y_received', self.cross_key, self.cutback_key, self.switch_key,
+                                         self.shot_ass_key, self.goal_ass_key, self.play_pattern_column,
+                                         self.rel_eve_column])
             coordinates = ['x_initial', 'y_initial', 'x_received', 'y_received']
 
             for c in coordinates:
@@ -267,3 +279,69 @@ class pass_data():
                 f'data format.')
 
         return data
+
+    def get_passes(self, get, data=None):
+
+        # allows to supply data instead of using the shotdata.data
+        # therefore we can use function on the outcome of the function
+        # (e.g. first get all crosses and then the assists)
+        if data is None:
+            got_data = self.data.copy(deep=True)
+        else:
+            got_data = data.copy(deep=True)
+
+        if get in [self.shot_ass_key, self.goal_ass_key, self.cutback_key, self.cross_key, self.switch_key]:
+            got_data = got_data.loc[got_data[get] == True]
+            n_home = len(got_data.loc[self.filter1])
+            n_away = len(got_data.loc[self.filter2])
+            n_dict = {self.home_team: n_home,
+                      self.away_team: n_away}
+            return got_data, n_dict
+
+        elif get in list(got_data[self.player_column]):
+            got_data = got_data.loc[got_data[self.player_column] == get]
+            n = len(got_data)
+            return got_data, n
+        elif get in [self.home_team, self.away_team]:
+            got_data = got_data.loc[got_data[self.team_column] == get]
+            players = list(got_data[self.player_column].unique())
+            n_dict = {}
+            for player in players:
+                n = len(got_data.loc[got_data[self.player_column] == player])
+                n_dict[player] = n
+            return got_data, n_dict
+        elif get in list(got_data[self.outcome_key]):
+            got_data = got_data.loc[got_data[self.outcome_key] == get]
+            n_home = len(got_data.loc[self.filter1])
+            n_away = len(got_data.loc[self.filter2])
+            n_dict = {self.home_team: n_home,
+                      self.away_team: n_away}
+            return got_data, n_dict
+        elif get in list(got_data[self.type_key]):
+            got_data = got_data.loc[got_data[self.type_key] == get]
+            n_home = len(got_data.loc[self.filter1])
+            n_away = len(got_data.loc[self.filter2])
+            n_dict = {self.home_team: n_home,
+                      self.away_team: n_away}
+            return got_data, n_dict
+        elif get in list(got_data[self.play_pattern_column]):
+            got_data = got_data.loc[got_data[self.play_pattern_column] == get]
+            n_home = len(got_data.loc[self.filter1])
+            n_away = len(got_data.loc[self.filter2])
+            n_dict = {self.home_team: n_home,
+                      self.away_team: n_away}
+            return got_data, n_dict
+        elif get in list(got_data[self.half_column]):
+            got_data = got_data.loc[got_data[self.half_column] == get]
+            n_home = len(got_data.loc[self.filter1])
+            n_away = len(got_data.loc[self.filter2])
+            n_dict = {self.home_team: n_home,
+                      self.away_team: n_away}
+            return got_data, n_dict
+        else:
+            raise ValueError(f'No valid value was supplied to "get". You can supply values/strings that occur in any of'
+                             f' the following columns: {self.half_column}, {self.play_pattern_column},'
+                             f'{self.type_key}, {self.outcome_key}, {self.team_column}, {self.player_column} or'
+                             f' one of the following strings:'
+                             f'{self.cutback_key}, {self.switch_key}, {self.cross_key}, {self.shot_ass_key},'
+                             f' {self.goal_ass_key}.')

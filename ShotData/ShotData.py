@@ -12,9 +12,9 @@ from PIL import Image
 import numpy as np
 
 
-# ------------------------------------------------------------------------
-# shot data as its own class with functions to rescale and create shot map
-# ------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------
+# shot data as its own class with functions to rescale and create shot map and xG-charts
+# --------------------------------------------------------------------------------------
 
 class shot_data:
     def __init__(self, data, data_source=None, x_range_data=None, y_range_data=None, team_col='team',

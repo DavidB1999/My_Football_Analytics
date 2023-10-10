@@ -26,8 +26,8 @@ https://github.com/DavidB1999/My_Football_Analytics/tree/main/Basics/Data or htt
 + *mirror_away (list, str)* - list of axes (x, y) to mirror for the away team 
 + *location_column (str)* - name of the column containing both coordinates (if the coordinates are in a single column - Statsbomb)
 + *shot_column (str)* - name of the column containing a dictionary with information on the shot (Statsbomb)
-+ *xg_key (str)* - key for xG-value in the shot information directory (shot_column; Statsbomb)
-+ *outcome_key (str)* - key for outcome in the shot information directory (shot_column; Statsbomb)
++ *xg_key (str)* - key for xG-value in the shot information dictionary (shot_column; Statsbomb)
++ *outcome_key (str)* - key for outcome in the shot information dictionary (shot_column; Statsbomb)
 + *teams (list, str)* - optional list to indentify home and away team; if None the code will assume that team first in the list of shots is the home team (works for Understat) 
 
 
@@ -35,7 +35,7 @@ https://github.com/DavidB1999/My_Football_Analytics/tree/main/Basics/Data or htt
                       (self) 
 Function to handle shot data. The main purpose is the rescaling of x and y coordinates to match to a certain
 data range as for instance necessary for pitches. An indepth explanation of the rescaling logic used can be found
-in the Appendix <br>
+in the Appendix. <br>
 
 **Parameters** 
 
