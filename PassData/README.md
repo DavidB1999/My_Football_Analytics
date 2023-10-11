@@ -50,7 +50,7 @@ in the Appendix. 'Unnecessary' columns are not retained in rescaled data. <br>
 
 
 ### **get_passes**
-                (self, get, data=None)
+                (self, get, data=None, receiver_get=False, receiver_count=False)
 
 Allows to filter the passes by most informational elements. <br>
 
@@ -58,7 +58,8 @@ Allows to filter the passes by most informational elements. <br>
 
 + *get (str, int)* - Any string (or int for 'period') indicating a filter condition.
 + *data (dataframe)* - Dataframe to be filtered. If None the class' data will be used. Specifying a dataframe allows to apply multiple filters in sequence
-
++ *receiver_get (boolean)* - Is the name supplied to get to be used on the receivers instead of the passing players? Meaning: Should filter be applied to receiving players?
++ *receiver_count (boolean)* - Is the count that is returned supposed to distinguish between receiving players instead of passing players? 
 
 ### **pass_map**
                 (self, plot_direction_of_play=True, data=None, direction_of_play='ltr', pdop_x=1 / 3, pdop_y=0.1,
@@ -78,3 +79,36 @@ Allows to filter the passes by most informational elements. <br>
 **Returns**
 
 + *fig (figure)* - pass map figure
+
+### **pass_network**
+                (self, pitch_col='#1c380e', line_col='white', colors=None, data=None, pass_min=5)
+
+**Parameters** 
+
++ *pitch_col (color)* - color of the pitch plotted
++ *line_col (color)* - color of the pitch lines
++ *colors* - list of colors for the 11 players
++ *data (dataframe)* - Dataframe with passes to be plotted. If None the class' data will be used. Specifying a dataframe allows to apply multiple filters and is recommended!
++ *pass_min* - Minimum of passes played for a connection to be displayed in the network
+
+**Returns**
+
++ *network (dict)* - information on connections
++ *fig (figure)* - pass network figure
+
+
+### **count_returner**
+                     (self, data, receiver=False)
+
+Function to return number of passes per unit.
+Unit is automatically determined based on the number of players, and teams in the supplied data. <br>
+
+**Parameters** 
+
++ *data (dataframe)* - Dataframe with passes to be plotted. 
++ *receiver (boolean)* - Is the count that is returned supposed to distinguish between receiving players instead of passing players? (receiver_count)
+
+**Returns**
+
+* n (int or dict)* - count per unit
+
