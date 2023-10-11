@@ -1,9 +1,11 @@
 # Shot Data
 
-This folder contains a class (within *ShotData.py*) that helps to handle shot data (so far mainly Understat-data [1]) which entails function 
-to create shotmaps and xG-flowcharts. Those visualizations are inspired by the content from Understat [1]. For some
-examples check out the notebooks in this directory.<br>
-
+This folder contains a class (within *ShotData.py*) that helps to handle shot data (so far mainly Understat-data [1]
+and Statsbomb [2]) from a single match which entails functions to create shotmaps and xG-flowcharts.
+Those visualizations are inspired by the content from Understat [1]. For some examples check out the notebooks in this
+directory.<br>
+For insights on the structure of Statsbomb data and how to access either check 
+https://github.com/DavidB1999/My_Football_Analytics/tree/main/Basics/Data or https://github.com/statsbomb/statsbombpy! <br>
 
 ## **class shot_data**
 
@@ -22,13 +24,18 @@ examples check out the notebooks in this directory.<br>
 + *scale_to_pitch (str)* - default options of data ranges to scale to
 + *x_range_pitch* and *x_range_pitch (tuple, numeric)* - range of x and y coordinates required
 + *mirror_away (list, str)* - list of axes (x, y) to mirror for the away team 
++ *location_column (str)* - name of the column containing both coordinates (if the coordinates are in a single column - Statsbomb)
++ *shot_column (str)* - name of the column containing a dictionary with information on the shot (Statsbomb)
++ *xg_key (str)* - key for xG-value in the shot information dictionary (shot_column; Statsbomb)
++ *outcome_key (str)* - key for outcome in the shot information dictionary (shot_column; Statsbomb)
++ *teams (list, str)* - optional list to indentify home and away team; if None the code will assume that team first in the list of shots is the home team (works for Understat) 
 
 
 ### **rescale_shot_data**
                       (self) 
 Function to handle shot data. The main purpose is the rescaling of x and y coordinates to match to a certain
 data range as for instance necessary for pitches. An indepth explanation of the rescaling logic used can be found
-in the Appendix <br>
+in the Appendix. <br>
 
 **Parameters** 
 
@@ -147,6 +154,7 @@ A simple utility function to calculate the number of expected goals for a team a
 
 ## References
 [1] - https://understat.com/ <br>
+[2] - https://github.com/statsbomb/statsbombpy | https://statsbomb.com/
 
 
 ## Appendix
