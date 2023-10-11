@@ -81,7 +81,8 @@ Allows to filter the passes by most informational elements. <br>
 + *fig (figure)* - pass map figure
 
 ### **pass_network**
-                (self, pitch_col='#1c380e', line_col='white', colors=None, data=None, pass_min=5)
+                    (self, pitch_col='#1c380e', line_col='white', colors=None, data=None, pass_min=5,
+                     by_receive=False)
 
 **Parameters** 
 
@@ -90,6 +91,7 @@ Allows to filter the passes by most informational elements. <br>
 + *colors* - list of colors for the 11 players
 + *data (dataframe)* - Dataframe with passes to be plotted. If None the class' data will be used. Specifying a dataframe allows to apply multiple filters and is recommended!
 + *pass_min* - Minimum of passes played for a connection to be displayed in the network
++ *by_receive* - If True average positions will be calculated based on the average receiving position instead of pass origins
 
 **Returns**
 
@@ -110,5 +112,5 @@ Unit is automatically determined based on the number of players, and teams in th
 
 **Returns**
 
-* n (int or dict)* - count per unit
++ *n (int or dict)* - count per unit
 

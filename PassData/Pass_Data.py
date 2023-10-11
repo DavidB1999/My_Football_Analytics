@@ -400,7 +400,8 @@ class pass_data():
 
         return fig
 
-    def pass_network(self, pitch_col='#1c380e', line_col='white', colors=None, data=None, pass_min=5):
+    def pass_network(self, pitch_col='#1c380e', line_col='white', colors=None, data=None, pass_min=5,
+                     by_receive=False):
 
         if colors is None:
             colors = ['#d9534f', '#5bc0de', '#5cb85c', '#428bca', '#faa632', '#c7254e', '#843534', '#ff71ce',
@@ -429,43 +430,83 @@ class pass_data():
         # create a dictionary with all values needed for network plotting
         network = dict()
 
-        # for each player in starting XI
-        for p in XI:
-            network[p] = dict()
-            pP, nP = self.get_passes(get=p, data=data)            # all passed played by p
-            network[p]['x_avg'] = pP['x_initial'].mean()          # average x of pass origin for p
-            network[p]['y_avg'] = pP['y_initial'].mean()          # average y of pass origin for p
-            network[p]['n'] = nP                                  # number of passes played by p
-            pPs, nPs = self.get_passes(get="Complete", data=pP)   # all completed passes of p
-            network[p]['n_complete'] = nPs                        # number of completed passes of p
-            network[p]['receivers'] = {}
-            receivers = list(pP['recipient'].unique())            # all players who received as pass from p
-            for r in receivers:
-                if r == p:
-                    pass
-                else:
-                    pR, nR = self.get_passes(get=r, data=pP, receiver_get=True)  # all passes played from p to r
-                    network[p]['receivers'][r] = nR                              # number of passes from p to r
+        if not by_receive:
+            # for each player in starting XI
+            for p in XI:
+                network[p] = dict()
+                pP, nP = self.get_passes(get=p, data=data)            # all passed played by p
+                network[p]['x_avg'] = pP['x_initial'].mean()          # average x of pass origin for p
+                network[p]['y_avg'] = pP['y_initial'].mean()          # average y of pass origin for p
+                network[p]['n'] = nP                                  # number of passes played by p
+                pPs, nPs = self.get_passes(get="Complete", data=pP)   # all completed passes of p
+                network[p]['n_complete'] = nPs                        # number of completed passes of p
+                network[p]['receivers'] = {}
+                receivers = list(pP[self.receiver_key].unique())            # all players who received as pass from p
+                for r in receivers:
+                    if r == p or r not in XI:
+                        pass
+                    else:
+                        pR, nR = self.get_passes(get=r, data=pP, receiver_get=True)  # all passes played from p to r
+                        network[p]['receivers'][r] = nR                              # number of passes from p to r
 
-        for P, p in enumerate(XI):
-            if len(colors) < 11:
-                warnings.warn('Recommended to supply a list of colors with one per player (i.e. 11). '
-                              'If less than 11 colors are supplied, the first one will be used for all players')
-                if type(colors) == str:
-                    color = colors
+            for P, p in enumerate(XI):
+                if len(colors) < 11:
+                    warnings.warn('Recommended to supply a list of colors with one per player (i.e. 11). '
+                                  'If less than 11 colors are supplied, the first one will be used for all players')
+                    if type(colors) == str:
+                        color = colors
+                    else:
+                        color = colors[0]
                 else:
-                    color = colors[0]
-            else:
-                color = colors[P]
-            plt.scatter(network[p]['x_avg'], network[p]['y_avg'], s=network[p]['n'] * 3, color=colors[P])
-            for r in network[p]['receivers']:
-                if r != 'None' and r in XI:
-                    if network[p]['receivers'][r] > pass_min:
-                        plt.arrow(x=network[p]['x_avg'], y=network[p]['y_avg'],
-                                  dx=network[r]['x_avg'] - network[p]['x_avg'],
-                                  dy=network[r]['y_avg'] - network[p]['y_avg'], color=color,
-                                  alpha=0.5, width=network[p]['receivers'][r] / 10, length_includes_head=True,
-                                  head_width=network[p]['receivers'][r] / 2, head_length=network[p]['receivers'][r] / 3)
+                    color = colors[P]
+                plt.scatter(network[p]['x_avg'], network[p]['y_avg'], s=network[p]['n'] * 3, color=color)
+                for r in network[p]['receivers']:
+                    if r != 'None' and r in XI:
+                        if network[p]['receivers'][r] > pass_min:
+                            plt.arrow(x=network[p]['x_avg'], y=network[p]['y_avg'],
+                                      dx=network[r]['x_avg'] - network[p]['x_avg'],
+                                      dy=network[r]['y_avg'] - network[p]['y_avg'], color=color,
+                                      alpha=0.5, width=network[p]['receivers'][r] / 10, length_includes_head=True,
+                                      head_width=network[p]['receivers'][r] / 2, head_length=network[p]['receivers'][r] / 3)
+        elif by_receive:
+            for r in XI:
+                network[r] = dict()
+                rR, nR = self.get_passes(get=r, data=data, receiver_get=True, receiver_count=True)            # all passed received by r
+                network[r]['x_avg'] = rR['x_received'].mean()          # average x where r received passed
+                network[r]['y_avg'] = rR['y_received'].mean()          # average y where r received passed
+                network[r]['n'] = nR                                  # number of passes received by r
+                rRs, nRs = self.get_passes(get="Complete", data=rR, receiver_count=True)   # all completed passes to r
+                network[r]['n_complete'] = nRs                        # number of completed passes to r
+                network[r]['passers'] = {}
+                passers = list(rR[self.player_column].unique())            # all players who passed to r
+                for p in passers:
+                    if p == r or p not in XI:
+                        pass
+                    else:
+                        pP, nP = self.get_passes(get=p, data=rR)           # all passes received by r from p
+                        network[r]['passers'][p] = nP                      # number of passes received by r from p
+
+            for R, r in enumerate(XI):
+                if len(colors) < 11:
+                    warnings.warn('Recommended to supply a list of colors with one per player (i.e. 11). '
+                                  'If less than 11 colors are supplied, the first one will be used for all players')
+                    if type(colors) == str:
+                        color = colors
+                    else:
+                        color = colors[0]
+                else:
+                    color = colors[R]
+                plt.scatter(network[r]['x_avg'], network[r]['y_avg'], s=network[r]['n'] * 3, color=color)
+                for p in network[r]['passers']:
+                    if p != 'None' and p in XI:
+                        if network[r]['passers'][p] > pass_min:
+                            plt.arrow(x=network[p]['x_avg'], y=network[p]['y_avg'],
+                                      dx=network[r]['x_avg'] - network[p]['x_avg'],
+                                      dy=network[r]['y_avg'] - network[p]['y_avg'], color=color,
+                                      alpha=0.5, width=network[r]['passers'][p] / 10, length_includes_head=True,
+                                      head_width=network[r]['passers'][p] / 2,
+                                      head_length=network[r]['passers'][p] / 3)
+
         return fig, network
 
     def count_returner(self, data, receiver=False):
