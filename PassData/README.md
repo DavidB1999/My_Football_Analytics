@@ -57,5 +57,24 @@ Allows to filter the passes by most informational elements. <br>
 **Parameters**
 
 + *get (str, int)* - Any string (or int for 'period') indicating a filter condition.
-+ data (dataframe) - Dataframe to be filtered. If None the class' data will be used. Specifying a dataframe allows to apply multiple filters in sequence
++ *data (dataframe)* - Dataframe to be filtered. If None the class' data will be used. Specifying a dataframe allows to apply multiple filters in sequence
 
+
+### **pass_map**
+                (self, plot_direction_of_play=True, data=None, direction_of_play='ltr', pdop_x=1 / 3, pdop_y=0.1,
+                 pdop_l=1 / 3, pitch_col='#1c380e', line_col='white', pdop_o=0.2)
+
+**Parameters** 
+
++ *plot_direction_of_play (boolean)* - Indicating if possession of play should be displayed by an arrow (only possible if just one team is included)
++ *data (dataframe)* - Dataframe with passes to be plotted. If None the class' data will be used. Specifying a dataframe allows to apply multiple filters and is recommended!
++ *direction_of_play (str)* - "ltr" for left to right or "rtl" for right to left, indicating the correct direction of play
++ *pdop_x* and *pdop_y (float)* - numerical indicating the relative placement of direction of play arrow
++ *pdop_y (float)* - numerical indicating the relative length of the direction of play arrow
++ *pdop_o (float)* - numerical indicating the opacity/alpha of the direction of play arrow
++ *pitch_col (color)* - color of the pitch plotted
++ *line_col (color)* - color of the pitch lines
+
+**Returns**
+
++ *fig (figure)* - pass map figure
