@@ -11,7 +11,7 @@ import plotly.graph_objects as go
 from PIL import Image
 import numpy as np
 import re
-
+import warnings
 
 # ------------------------------------------------------------------------
 # pass data as its own class with functions to rescale and create shot map
@@ -135,7 +135,8 @@ class pass_data():
 
     def __str__(self):
         return (
-            f"pass_data object of {self.data_source} of shape {self.data.shape}."
+            f"pass_data object of {self.data_source} of shape {self.data.shape}. Coordinate ranges are"
+            f" {self.x_range_pitch} for x and {self.y_range_pitch} for y.git"
         )
 
     # --------------------------------------------------
@@ -345,3 +346,55 @@ class pass_data():
                              f' one of the following strings:'
                              f'{self.cutback_key}, {self.switch_key}, {self.cross_key}, {self.shot_ass_key},'
                              f' {self.goal_ass_key}.')
+
+    def pass_map(self, plot_direction_of_play=True, data=None, direction_of_play='ltr', pdop_x=1 / 3, pdop_y=0.1,
+                 pdop_l=1 / 3, pitch_col='#1c380e', line_col='white', pdop_o=0.2):
+
+        if self.scale_to_pitch == 'mplsoccer':
+            pitch = Pitch(pitch_color=pitch_col, line_color=line_col)
+            fig, ax = plt.subplots()
+            fig.set_facecolor(pitch_col)
+            pitch.draw(ax=ax)
+        elif self.scale_to_pitch == 'myPitch':
+            pitch = myPitch(grasscol=pitch_col)
+            fig, ax = plt.subplots()  # figsize=(13.5, 8)
+            fig.set_facecolor(pitch_col)
+            pitch.plot_pitch(ax=ax)
+        else:
+            raise ValueError(f'Unfortunately the pitch {self.scale_to_pitch} is not yet supported by this function!')
+
+        if data is None:
+            data = self.data
+            warnings.warn('Recommended to use filtered data to avoid a mess!', category=Warning)
+
+        teams = data[self.team_column].unique()
+        if len(teams) > 1:
+            warnings.warn('Recommended to include only one team to avoid a mess!', category=Warning)
+        elif plot_direction_of_play:
+            if direction_of_play == 'ltr':
+                plt.arrow(x=min(self.x_range_pitch) + max(self.x_range_pitch) * pdop_x,
+                          y=max(self.y_range_pitch) * pdop_y,
+                          dx=pdop_l * (max(self.x_range_pitch)-min(self.x_range_pitch)), dy=0,
+                          width=1, color='white', alpha=pdop_o)
+            elif direction_of_play == 'rtl':
+                plt.arrow(x=max(self.x_range_pitch) - max(self.x_range_pitch) * pdop_x,
+                          y=max(self.y_range_pitch) * pdop_y,
+                          dx=pdop_l * (max(self.x_range_pitch)-min(self.x_range_pitch)), dy=0,
+                          width=1, color='white', alpha=pdop_o)
+            else:
+                raise Warning('No valid direction of play was supplied. Either specify a direction of play '
+                              '["ltr", "rtl"] or disable the plot_direction_of_play.')
+
+        for p in range(len(data['x_initial'])):
+            if data[self.outcome_key].iloc[p] == 'Complete':
+                plt.arrow(x=data['x_initial'].iloc[p], y=data['y_initial'].iloc[p],
+                          dx=data['x_received'].iloc[p] - data['x_initial'].iloc[p],
+                          dy=data['y_received'].iloc[p] - data['y_initial'].iloc[p],
+                          width=0.1, color='green', length_includes_head=True, head_width=0.75)
+            else:
+                plt.arrow(x=data['x_initial'].iloc[p], y=data['y_initial'].iloc[p],
+                          dx=data['x_received'].iloc[p] - data['x_initial'].iloc[p],
+                          dy=data['y_received'].iloc[p] - data['y_initial'].iloc[p],
+                          width=0.1, color='red', length_includes_head=True, head_width=0.75)
+
+        return fig
