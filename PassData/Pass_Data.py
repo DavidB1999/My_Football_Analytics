@@ -24,7 +24,7 @@ class pass_data():
                  scale_to_pitch='mplsoccer', x_range_pitch=None, y_range_pitch=None, rel_eve_col=None,
                  mirror_away=['x', 'y'], type_key=None, outcome_key=None, minute_col=None, second_col=None,
                  shot_ass_key=None, goal_ass_key=None, cross_key=None, cutback_key=None, switch_key=None,
-                 play_pattern_col=None, half_col=None):
+                 play_pattern_col=None, half_col=None, receiver_key=None):
 
         supported_data_sources = ['Statsbomb']
 
@@ -54,6 +54,7 @@ class pass_data():
         self.switch_key = switch_key
         self.play_pattern_column = play_pattern_col
         self.half_column = half_col
+        self.receiver_key = receiver_key
 
         # usually in Statsbomb both teams play both halves left to right (0 to 120) and there are certain naming
         # conventions. These will be used unless something else is explicitly specified
@@ -92,6 +93,8 @@ class pass_data():
                 self.switch_key = 'switch'
             if self.cutback_key is None:
                 self.cutback_key = 'cut-back'
+            if self.receiver_key is None:
+                self.receiver_key = 'recipient'
             if self.x_range_data is None:
                 self.x_range_data = (0, 120)
             if self.y_range_data is None:
@@ -136,7 +139,7 @@ class pass_data():
     def __str__(self):
         return (
             f"pass_data object of {self.data_source} of shape {self.data.shape}. Coordinate ranges are"
-            f" {self.x_range_pitch} for x and {self.y_range_pitch} for y.git"
+            f" {self.x_range_pitch} for x and {self.y_range_pitch} for y"
         )
 
     # --------------------------------------------------
@@ -185,6 +188,7 @@ class pass_data():
             switch = []
             shot_assist = []
             goal_assist = []
+            receiver = []
 
             # print(len(data))
             for p in range(len(data)):
@@ -216,6 +220,10 @@ class pass_data():
                     goal_assist.append(data[self.pass_column][p][self.goal_ass_key])
                 except:
                     goal_assist.append(False)
+                try:
+                    receiver.append(data[self.pass_column][p][self.receiver_key]['name'])
+                except:
+                    receiver.append('None')
 
             # start and end location split into separate lists for both x and y
             # loop over pass location and access both x and y
@@ -234,12 +242,13 @@ class pass_data():
                 y2_org.append(float(el[1]))
 
             pada = pd.DataFrame(zip(player, period, minute, second, team, outcome, type, x1_org, y1_org, x2_org, y2_org,
-                                    cross, cutback, switch, shot_assist, goal_assist, play_pattern, related_events),
+                                    cross, cutback, switch, shot_assist, goal_assist, play_pattern, related_events,
+                                    receiver),
                                 columns=[self.player_column, self.half_column, self.minute_column, self.second_column,
                                          self.team_column, self.outcome_key, self.type_key, 'x_initial', 'y_initial',
                                          'x_received', 'y_received', self.cross_key, self.cutback_key, self.switch_key,
                                          self.shot_ass_key, self.goal_ass_key, self.play_pattern_column,
-                                         self.rel_eve_column])
+                                         self.rel_eve_column, self.receiver_key])
             coordinates = ['x_initial', 'y_initial', 'x_received', 'y_received']
 
             for c in coordinates:
@@ -281,7 +290,7 @@ class pass_data():
 
         return data
 
-    def get_passes(self, get, data=None):
+    def get_passes(self, get, data=None, receiver_get=False, receiver_count=False):
 
         # allows to supply data instead of using the shotdata.data
         # therefore we can use function on the outcome of the function
@@ -293,52 +302,44 @@ class pass_data():
 
         if get in [self.shot_ass_key, self.goal_ass_key, self.cutback_key, self.cross_key, self.switch_key]:
             got_data = got_data.loc[got_data[get] == True]
-            n_home = len(got_data.loc[self.filter1])
-            n_away = len(got_data.loc[self.filter2])
-            n_dict = {self.home_team: n_home,
-                      self.away_team: n_away}
-            return got_data, n_dict
+            n = self.count_returner(got_data, receiver=receiver_count)
+            return got_data, n
+
+        elif get in list(got_data[self.receiver_key]) and receiver_get:
+            got_data = got_data.loc[got_data[self.receiver_key] == get]
+            n = self.count_returner(got_data, receiver=receiver_count)
+            return got_data, n
 
         elif get in list(got_data[self.player_column]):
             got_data = got_data.loc[got_data[self.player_column] == get]
-            n = len(got_data)
+            n = self.count_returner(got_data, receiver=receiver_count)
             return got_data, n
+
         elif get in [self.home_team, self.away_team]:
             got_data = got_data.loc[got_data[self.team_column] == get]
-            players = list(got_data[self.player_column].unique())
-            n_dict = {}
-            for player in players:
-                n = len(got_data.loc[got_data[self.player_column] == player])
-                n_dict[player] = n
-            return got_data, n_dict
+            n = self.count_returner(got_data, receiver=receiver_count)
+            return got_data, n
+
         elif get in list(got_data[self.outcome_key]):
             got_data = got_data.loc[got_data[self.outcome_key] == get]
-            n_home = len(got_data.loc[self.filter1])
-            n_away = len(got_data.loc[self.filter2])
-            n_dict = {self.home_team: n_home,
-                      self.away_team: n_away}
-            return got_data, n_dict
+            n = self.count_returner(got_data, receiver=receiver_count)
+            return got_data, n
+
         elif get in list(got_data[self.type_key]):
             got_data = got_data.loc[got_data[self.type_key] == get]
-            n_home = len(got_data.loc[self.filter1])
-            n_away = len(got_data.loc[self.filter2])
-            n_dict = {self.home_team: n_home,
-                      self.away_team: n_away}
-            return got_data, n_dict
+            n = self.count_returner(got_data, receiver=receiver_count)
+            return got_data, n
+
         elif get in list(got_data[self.play_pattern_column]):
             got_data = got_data.loc[got_data[self.play_pattern_column] == get]
-            n_home = len(got_data.loc[self.filter1])
-            n_away = len(got_data.loc[self.filter2])
-            n_dict = {self.home_team: n_home,
-                      self.away_team: n_away}
-            return got_data, n_dict
+            n = self.count_returner(got_data, receiver=receiver_count)
+            return got_data, n
+
         elif get in list(got_data[self.half_column]):
             got_data = got_data.loc[got_data[self.half_column] == get]
-            n_home = len(got_data.loc[self.filter1])
-            n_away = len(got_data.loc[self.filter2])
-            n_dict = {self.home_team: n_home,
-                      self.away_team: n_away}
-            return got_data, n_dict
+            n = self.count_returner(got_data, receiver=receiver_count)
+            return got_data, n
+
         else:
             raise ValueError(f'No valid value was supplied to "get". You can supply values/strings that occur in any of'
                              f' the following columns: {self.half_column}, {self.play_pattern_column},'
@@ -398,3 +399,112 @@ class pass_data():
                           width=0.1, color='red', length_includes_head=True, head_width=0.75)
 
         return fig
+
+    def pass_network(self, pitch_col='#1c380e', line_col='white', colors=None, data=None, pass_min=5):
+
+        if colors is None:
+            colors = ['#d9534f', '#5bc0de', '#5cb85c', '#428bca', '#faa632', '#c7254e', '#843534', '#ff71ce',
+                      '#01cdfe', '#05ffa1', '#b967ff', '#fffb96']
+
+        if self.scale_to_pitch == 'mplsoccer':
+            pitch = Pitch(pitch_color=pitch_col, line_color=line_col)
+            fig, ax = plt.subplots()
+            fig.set_facecolor(pitch_col)
+            pitch.draw(ax=ax)
+        elif self.scale_to_pitch == 'myPitch':
+            pitch = myPitch(grasscol=pitch_col)
+            fig, ax = plt.subplots()  # figsize=(13.5, 8)
+            fig.set_facecolor(pitch_col)
+            pitch.plot_pitch(ax=ax)
+        else:
+            raise ValueError(f'Unfortunately the pitch {self.scale_to_pitch} is not yet supported by this function!')
+
+        if data is None:
+            data = self.data
+            warnings.warn('Recommended to use filtered data to avoid a mess!', category=Warning)
+
+        # get starting 11
+        XI = data[self.player_column].unique()[0:11]
+
+        # create a dictionary with all values needed for network plotting
+        network = dict()
+
+        # for each player in starting XI
+        for p in XI:
+            network[p] = dict()
+            pP, nP = self.get_passes(get=p, data=data)            # all passed played by p
+            network[p]['x_avg'] = pP['x_initial'].mean()          # average x of pass origin for p
+            network[p]['y_avg'] = pP['y_initial'].mean()          # average y of pass origin for p
+            network[p]['n'] = nP                                  # number of passes played by p
+            pPs, nPs = self.get_passes(get="Complete", data=pP)   # all completed passes of p
+            network[p]['n_complete'] = nPs                        # number of completed passes of p
+            network[p]['receivers'] = {}
+            receivers = list(pP['recipient'].unique())            # all players who received as pass from p
+            for r in receivers:
+                if r == p:
+                    pass
+                else:
+                    pR, nR = self.get_passes(get=r, data=pP, receiver_get=True)  # all passes played from p to r
+                    network[p]['receivers'][r] = nR                              # number of passes from p to r
+
+        for P, p in enumerate(XI):
+            if len(colors) < 11:
+                warnings.warn('Recommended to supply a list of colors with one per player (i.e. 11). '
+                              'If less than 11 colors are supplied, the first one will be used for all players')
+                if type(colors) == str:
+                    color = colors
+                else:
+                    color = colors[0]
+            else:
+                color = colors[P]
+            plt.scatter(network[p]['x_avg'], network[p]['y_avg'], s=network[p]['n'] * 3, color=colors[P])
+            for r in network[p]['receivers']:
+                if r != 'None' and r in XI:
+                    if network[p]['receivers'][r] > pass_min:
+                        plt.arrow(x=network[p]['x_avg'], y=network[p]['y_avg'],
+                                  dx=network[r]['x_avg'] - network[p]['x_avg'],
+                                  dy=network[r]['y_avg'] - network[p]['y_avg'], color=color,
+                                  alpha=0.5, width=network[p]['receivers'][r] / 10, length_includes_head=True,
+                                  head_width=network[p]['receivers'][r] / 2, head_length=network[p]['receivers'][r] / 3)
+        return fig, network
+
+    def count_returner(self, data, receiver=False):
+        if not receiver:
+            if len(list(data[self.team_column].unique())) > 1:  # more than one team?!
+                # per team
+                n_home = len(data.loc[self.filter1])
+                n_away = len(data.loc[self.filter2])
+                n_dict = {self.home_team: n_home,
+                          self.away_team: n_away}
+                return n_dict
+            elif len(list(data[self.player_column].unique())) > 1:  # just one team but more than one player?!
+                # per player
+                players = list(data[self.player_column].unique())
+                n_dict = {}
+                for player in players:
+                    n = len(data.loc[data[self.player_column] == player])  # just one player?!
+                    n_dict[player] = n
+                return n_dict
+            else:
+                n = len(data)
+                return n
+        elif receiver:
+            if len(list(data[self.team_column].unique())) > 1:  # more than one team?!
+                # per team
+                n_home = len(data.loc[self.filter1])
+                n_away = len(data.loc[self.filter2])
+                n_dict = {self.home_team: n_home,
+                          self.away_team: n_away}
+                return n_dict
+            elif len(list(data[self.receiver_key].unique())) > 1:  # just one team but more than one player?!
+                # per player
+                players = list(data[self.receiver_key].unique())
+                n_dict = {}
+                for player in players:
+                    n = len(data.loc[data[self.receiver_key] == player])  # just one player?!
+                    n_dict[player] = n
+                return n_dict
+            else:
+                n = len(data)
+                return n
+
