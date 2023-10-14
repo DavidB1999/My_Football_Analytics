@@ -64,11 +64,15 @@ def tracking_data(DATADIR,game_id,teamname):
     tracking = pd.read_csv('{}/{}'.format(DATADIR, teamfile), names=columns, index_col='Frame', skiprows=3)
     return tracking
 
+# - avoiding an x in the column names after merging for time and period -
 def merge_tracking_data(home,away):
     '''
     merge home & away tracking data files into single data frame
     '''
-    return home.drop(columns=['ball_x', 'ball_y']).merge( away, left_index=True, right_index=True )
+    merge_data = home.drop(columns=['ball_x', 'ball_y']).merge( away, left_index=True, right_index=True )
+    merge_data.rename(columns={merge_data.columns[0]: "Period", merge_data.columns[1]: "Time [s]"}, inplace=True)
+    return merge_data
+
 
 # - adding an option whether origin is in the center or at the bottom left -
 # - adding an option to not change in place! -
