@@ -13,7 +13,7 @@ https://github.com/anenglishgoat/Metrica-pitch-control <br>
 https://www.youtube.com/watch?v=KXSLKwADXKI <br>
 
 https://github.com/eddwebster/football_analytics#pitch-control-modeling <br>
-
+data: https://github.com/metrica-sports/sample-data
 
 ## References
 
