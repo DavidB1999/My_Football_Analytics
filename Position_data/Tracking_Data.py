@@ -279,3 +279,6 @@ class tracking_data:
                    c.split('_')[-1] in ['vx', 'vy', 'ax', 'ay', 'speed', 'acceleration']]  # Get the player ids
         data = data.drop(columns=columns)
         return data
+
+
+
