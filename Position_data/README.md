@@ -120,4 +120,4 @@ $$ \Delta a > 0: c_{new}  = b_1 - c \times s$$
 
 $$ \Delta a < 0: c_{new}  = b_2 - c \times s$$
 
-For more details check [Scaling_Reasoning.xlsx](ShotData/Scaling_Reasoning.xlsx). <br>
+For more details check [ShotData/Scaling_Reasoning.xlsx](ShotData/Scaling_Reasoning.xlsx). <br>
