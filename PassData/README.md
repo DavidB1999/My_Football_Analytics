@@ -114,3 +114,38 @@ Unit is automatically determined based on the number of players, and teams in th
 
 + *n (int or dict)* - count per unit
 
+
+
+## Appendix
+
+**Rescaling logic:** <br>
+
+$$ shotdataminmax = (a_1, a_2)$$
+
+$$ pitchminmax = (b_1, b_2)$$
+
+$$ \Delta a = a_2- a_1$$ 
+
+$$ \Delta b = b_2- b_1$$ 
+
+$$ c = coordinate$$
+
+$$ scalingfactor = s = \frac{\Delta b}{\Delta a}$$
+
+**Without mirroring:** <br>
+
+$$ \Delta a > 0: c_{new}  = b_1 + c \times s$$
+
+$$ \Delta a < 0: c_{new}  = b_2 + c \times s$$
+
+**With mirroring:** <br>
+
+$$ \Delta a > 0: c_{new}  = b_1 - c \times s$$
+
+$$ \Delta a < 0: c_{new}  = b_2 - c \times s$$
+
+For more details check [Scaling_Reasoning.xlsx](../ShotData/Scaling_Reasoning.xlsx). <br>
+
+
+
+
