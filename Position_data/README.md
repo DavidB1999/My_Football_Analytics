@@ -86,6 +86,33 @@ Function to remove velocities from data from Laurie Shaw. <br>
 + *data (dataframe)* - the data with any velocity columns removed
 
 
+### animation_clip
+                    (self, frames_per_second=25, fname='Animated_Clip',pitch_col='#1c380e',
+                    line_col='white', data=None, frames=None, colors= ['red', 'blue', 'black'],
+                    velocities=False, PlayerAlpha=0.7, fpath=None)
+
+Function to animate a set of frames of plotted players à la *plot_players*. 
+Once again this is largely based on Laurie Shaw's code in *Metrica_Viz.py*. <br>
+
+
+**Parameters**
+
++ *frames_per_second (int)* - frames per second to assume when generating the movie. Default is 25.
++ *fname (str)* - intended file name to store the clip. Defaults to "Animated_Clip"
++ *pitch_col (color)* - color of the pitch
++ *line_col (color)* - color of the pitch lines
++ *data (dataframe)* - Dataframe with tracking data; If None the class' data will be used. 
++ *frames (int, tuple)* - range of frames to be inlcuded in the clip. If None, the entire data will be used - not recommended.
++ *colors (list, color)* - list of colors for home team, away team and the ball (in that order)
++ *velocities (boolean)* - Whether velocities are supposed to be displayed
++ *PlayerAlpha (float)* - Opacity/alpha of velocity quiver
++ *fpath (str)* - Directory to save the Clip. If None Clip will be stored in current directory.
+
+
+**Returns**
+
+
+
 ## Credits
 
 Laurie Shaw - https://github.com/Friends-of-Tracking-Data-FoTD/LaurieOnTracking/blob/master/Metrica_Velocities.py |

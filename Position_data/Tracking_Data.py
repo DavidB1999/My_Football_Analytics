@@ -5,7 +5,7 @@ from Pitch.My_Pitch import \
 from mplsoccer import Pitch
 import matplotlib.pyplot as plt
 import scipy.signal as signal
-
+import matplotlib.animation as animation
 
 class tracking_data:
 
@@ -209,7 +209,8 @@ class tracking_data:
                 vx_columns = ['{}_vx'.format(c[:-2]) for c in list(self.dimensions[self.x_cols_pattern][''.join([team, '_columns'])])]  # column header for player x positions
                 vy_columns = ['{}_vy'.format(c[:-2]) for c in list(self.dimensions[self.y_cols_pattern][''.join([team, '_columns'])])]  # column header for player y positions
                 ax.quiver(x_values, y_values, plot_data[vx_columns], plot_data[vy_columns], color=color,
-                          scale_units='inches', scale=10., width=0.0015, headlength=5, headwidth=3, alpha=PlayerAlpha)
+                          angles='xy', scale_units='xy', scale=1, width=0.0015,
+                          headlength=5, headwidth=3, alpha=PlayerAlpha)
 
         return fig
 
@@ -273,6 +274,8 @@ class tracking_data:
             self.data = data
         else:
             return data
+
+    # credit and details: https://github.com/Friends-of-Tracking-Data-FoTD/LaurieOnTracking/blob/master/Metrica_Velocities.py
     def remove_velocities(self, data):
         # remove player velocities and acceleration measures that are already in the 'team' dataframe
         columns = [c for c in data.columns if
@@ -280,5 +283,77 @@ class tracking_data:
         data = data.drop(columns=columns)
         return data
 
+    # credit and details: https://github.com/Friends-of-Tracking-Data-FoTD/LaurieOnTracking/blob/master/Metrica_Viz.py
+    def animation_clip(self, frames_per_second=25, fname='Animated_Clip',pitch_col='#1c380e',
+                       line_col='white', data=None, frames=None, colors= ['red', 'blue', 'black'],
+                       velocities=False, PlayerAlpha=0.7, fpath=None):
 
+        # if no other data frame is supplied we use the class data
+        if data is None:
+            data = self.data
 
+        field_dimen = (max(self.dimensions['x']['pitch']), max(self.dimensions['y']['pitch']))
+
+        if frames is not None:
+            data = data[frames]
+        index = data.index
+
+        FFMpegWriter = animation.writers['ffmpeg']
+        metadata = dict(title='Tracking Data', artist='Matplotlib', comment=f'{self.data_source} tracking data clip')
+        writer = FFMpegWriter(fps=frames_per_second, metadata=metadata)
+        if fpath is not None:
+            fname = fpath + '/' + fname + '.mp4'  # path and filename
+        else:
+            fname = fname + '.mp4'
+
+        # create pitch
+        if self.scale_to_pitch == 'mplsoccer':
+            pitch = Pitch(pitch_color=pitch_col, line_color=line_col)
+            fig, ax = plt.subplots()
+            fig.set_facecolor(pitch_col)
+            pitch.draw(ax=ax)
+        elif self.scale_to_pitch == 'myPitch':
+            pitch = myPitch(grasscol=pitch_col)
+            fig, ax = plt.subplots()  # figsize=(13.5, 8)
+            fig.set_facecolor(pitch_col)
+            pitch.plot_pitch(ax=ax)
+        else:
+            raise ValueError(f'Unfortunately the pitch {self.scale_to_pitch} is not yet supported by this function!')
+
+        fig.set_tight_layout(True)
+        print("Generating your clip...", end='')
+
+        with writer.saving(fig, fname, 100):
+            for i in index:
+                figobjs = []  # this is used to collect up all the axis objects so that they can be deleted after each iteration
+                # for both teams
+                for team, color in zip(['home', 'away', 'ball'], colors):
+                    # get x and y values
+                    x_values = data[self.dimensions[self.x_cols_pattern][''.join([team, '_columns'])]].loc[i]
+                    y_values = data[self.dimensions[self.y_cols_pattern][''.join([team, '_columns'])]].loc[i]
+                    objs = ax.scatter(x=x_values, y=y_values, s=20, c=color)
+                    figobjs.append(objs)
+                    if velocities and team != 'ball':
+                        vx_columns = ['{}_vx'.format(c[:-2]) for c in list(self.dimensions[self.x_cols_pattern][''.join(
+                            [team, '_columns'])])]  # column header for player x positions
+                        vy_columns = ['{}_vy'.format(c[:-2]) for c in list(self.dimensions[self.y_cols_pattern][''.join(
+                            [team, '_columns'])])]  # column header for player y positions
+                        objs = ax.quiver(x_values, y_values, data[vx_columns].loc[i], data[vy_columns].loc[i],
+                                         color=color, angles='xy', scale_units='xy', scale=1, width=0.0015,
+                                         headlength=5, headwidth=3, alpha=PlayerAlpha)
+                        figobjs.append(objs)
+                frame_minute = int(data[self.time_col][i] / 60.)
+                frame_second = (data[self.time_col][i] / 60. - frame_minute) * 60.
+                timestring = "%d:%1.2f" % (frame_minute, frame_second)
+                objs = ax.text(field_dimen[0] / 2, field_dimen[1] + 1, timestring, fontsize=14)
+                figobjs.append(objs)
+                writer.grab_frame()
+                # Delete all axis objects (other than pitch lines) in preperation for next frame
+                for figobj in figobjs:
+                    figobj.remove()
+
+        print("done")
+        plt.clf()
+        plt.close(fig)
+
+        
