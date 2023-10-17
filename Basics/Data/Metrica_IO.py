@@ -71,6 +71,7 @@ def merge_tracking_data(home,away):
     '''
     merge_data = home.drop(columns=['ball_x', 'ball_y']).merge( away, left_index=True, right_index=True )
     merge_data.rename(columns={merge_data.columns[0]: "Period", merge_data.columns[1]: "Time [s]"}, inplace=True)
+    merge_data.drop(['Period_y', 'Time [s]_y'], axis=1, inplace=True)
     return merge_data
 
 

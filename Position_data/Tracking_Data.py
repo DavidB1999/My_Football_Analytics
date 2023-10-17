@@ -174,6 +174,10 @@ class tracking_data:
             data.loc[half_filter, self.dimensions[dim]['away_columns']] = max(self.dimensions[dim]['pitch']) - \
                                                                           data[self.dimensions[dim]['away_columns']][
                                                                               half_filter]
+        self.playing_direction_home = self.find_direction('Home', data)
+        self.playing_direction_away = self.find_direction('Away', data)
+        self.Home_GK = self.find_goalkeeper('Home', data)
+        self.Away_GK = self.find_goalkeeper('Away', data)
 
         return data
 
@@ -295,7 +299,7 @@ class tracking_data:
         field_dimen = (max(self.dimensions['x']['pitch']), max(self.dimensions['y']['pitch']))
 
         if frames is not None:
-            data = data[frames]
+            data = data.iloc[frames[0]-1:frames[1]]
         index = data.index
 
         FFMpegWriter = animation.writers['ffmpeg']
@@ -356,4 +360,44 @@ class tracking_data:
         plt.clf()
         plt.close(fig)
 
-        
+    # ----------------------------------------------
+    # function to get direction of player for a team
+    # based on the mean position in each 100 frames
+    # ----------------------------------------------
+    def find_direction(self, team, data=None, frames=100):
+
+        if data is None:
+            data = self.data
+
+        x_columns = [c for c in data.columns if c[-2:].lower() == '_x' and c[:4] == team]
+        mean_positions = data.iloc[0:frames][x_columns].mean()
+        mean_pos = mean_positions.mean()
+        pitchEnd1 = min(self.x_range_pitch)
+        pitchEnd2 = max(self.x_range_pitch)
+
+        if (abs(mean_pos-pitchEnd1)) < (abs(mean_pos-pitchEnd2)):
+            direction='ltr'
+        else:
+            direction='rtl'
+        return direction
+
+
+    def find_goalkeeper(self, team, data=None):
+        '''
+        Find the goalkeeper in team, identifying him/her as the player closest to goal at kick off
+        '''
+        if data is None:
+            data = self.data
+
+        x_columns = [c for c in data.columns if c[-2:].lower() == '_x' and c[:4] == team]
+        mean_positions = data.iloc[0:100][x_columns].mean()
+
+        direction = self.playing_direction_home if team == 'Home' else self.playing_direction_away
+        if direction == 'ltr':
+            pitchEnd = self.x_range_pitch[0]
+        else:
+            pitchEnd = self.x_range_pitch[1]
+
+
+        GK_col = (mean_positions-pitchEnd).abs().idxmin(axis=0)
+        return GK_col.split('_')[1]

@@ -102,7 +102,7 @@ Once again this is largely based on Laurie Shaw's code in *Metrica_Viz.py*. <br>
 + *pitch_col (color)* - color of the pitch
 + *line_col (color)* - color of the pitch lines
 + *data (dataframe)* - Dataframe with tracking data; If None the class' data will be used. 
-+ *frames (int, tuple)* - range of frames to be inlcuded in the clip. If None, the entire data will be used - not recommended.
++ *frames (int, tuple)* - range of frames to be included in the clip. If None, the entire data will be used - not recommended.
 + *colors (list, color)* - list of colors for home team, away team and the ball (in that order)
 + *velocities (boolean)* - Whether velocities are supposed to be displayed
 + *PlayerAlpha (float)* - Opacity/alpha of velocity quiver
