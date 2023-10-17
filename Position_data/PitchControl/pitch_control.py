@@ -51,6 +51,11 @@ class player:
                                                 #  ensures that anything near the GK is likely to be claimed by the GK
         self.player_name = '_'.join([self.team, self.id])
         self.position, self.inframe = self.get_position()
+        self.velocity = self.get_velocity()
+        self.time_to_intercept=None
+        self.PPCF = 0.
+
+
 
     def __str__(self):
         if self.frame is None:
@@ -63,19 +68,34 @@ class player:
         inframe = not np.any(np.isnan(position))
         return position, inframe
 
-"""
-# time to intercept
+    def get_velocity(self):
+        velocity = np.array([self.org_data[self.player_name+'_vx'], self.org_data[self.player_name+'_vy']])
+        if np.any(np.isnan(velocity)):
+            velocity = np.array([0., 0.])
+        return velocity
 
-position = np.array([10, 10])
-velocity = np.array([5, 5])
-reaction_time = 0.7
-r_final = np.array([10, 15])
-vmax = 10
+    def simple_time_to_intercept(self, r_final):
+        # Time to intercept assumes that the player continues moving at current velocity for 'reaction_time' seconds
+        # and then runs at full speed to the target position.
+        r_reaction = self.position + self.velocity*self.reaction_time
 
-# position after running in the same direction for reaction time =  position + velocity multiplied by reaction time
-r_reaction = position + velocity * reaction_time
-# time to intercept is the reaction time and the time needed for the straight line between position after reaction time and interception location
-# np.linalg.norm returns norm matrix of second order / euclidean norm equating to the direct distance / hypotenuse of pythagoras
-time_to_intercept = reaction_time + np.linalg.norm(r_final - r_reaction) / vmax
-time_to_intercept
-"""
+        # time to intercept is the reaction time and the time needed for the straight line between position after
+        # reaction time and interception location
+        # np.linalg.norm returns norm matrix of second order / euclidean norm
+        # equating to the direct distance / hypotenuse of pythagoras
+        self.time_to_intercept = self.reaction_time + np.linalg.norm(r_final-r_reaction)/self.vmax
+
+        return self.time_to_intercept
+
+    def probability_intercept_ball(self,T, r_final):
+        self.simple_time_to_intercept(r_final)
+        # probability of a player arriving at target location at time 'T' or earlier given their expected
+        # time_to_intercept (time of arrival), as described in Spearman 2017 eq 3
+        f = 1/(1. + np.exp( -np.pi/np.sqrt(3.0)/self.tti_sigma * (T-self.time_to_intercept) ) )
+        return f
+
+
+
+
+
+
