@@ -216,7 +216,7 @@ class tracking_data:
                           angles='xy', scale_units='xy', scale=1, width=0.0015,
                           headlength=5, headwidth=3, alpha=PlayerAlpha)
 
-        return fig
+        return fig, ax
 
     # credit and details: https://github.com/Friends-of-Tracking-Data-FoTD/LaurieOnTracking/blob/master/Metrica_Velocities.py
     def get_velocities(self, data=None, smoothing=True, filter='Savitzky-Golay', window=7, polyorder=1, maxspeed=12):
