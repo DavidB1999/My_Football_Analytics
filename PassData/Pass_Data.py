@@ -103,7 +103,7 @@ class pass_data():
         elif self.x_range_data is None or self.y_range_data is None:
             raise ValueError(f'You have not selected a data source which which would indicate an original scale.'
                              f'Neither did you supply custom ranges via "x_range_data" and "y_range_data"'
-                             f'Either supply one of {supported_data_sources} to "data_source" or '
+                             f'Either supply one of {self.supported_data_sources} to "data_source" or '
                              f'Supply tuples of data ranges to "x_range_data" and "x_range_data".')
 
         if teams is None:  # if we do not supply home and away it will try to guess by order (Works for understat)
@@ -116,7 +116,7 @@ class pass_data():
         self.filter1 = data[self.team_column] == self.home_team
         self.filter2 = data[self.team_column] == self.away_team
 
-        supported_pitch_types = ['mplsoccer', 'myPitch']
+        self.supported_pitch_types = ['mplsoccer', 'myPitch']
         if self.scale_to_pitch == 'mplsoccer':
             if self.x_range_pitch is None:
                 self.x_range_pitch = (0, 120)

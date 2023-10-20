@@ -2,7 +2,7 @@
 
 This folder contains some basic options to create a football pitch in python. <br>
 
-Based on inspirations I found online which inlcude the work of FCPython and McKay Johns and the packages mplsoccer and floodlight I also created my own simple function to create a custom pitch. <br>
+Based on inspirations I found online which include the work of FCPython and McKay Johns and the packages mplsoccer and floodlight I also created my own simple function to create a custom pitch. <br>
 
 ## My_Pitch.py
 
@@ -35,6 +35,7 @@ FCPython: https://fcpython.com/visualisation/drawing-pitchmap-adding-lines-circl
 Floodlight: https://floodlight.readthedocs.io/en/latest/index.html <br>
 McKay Johns: https://www.youtube.com/watch?v=55k1mCRyd2k <br>
 mplsoccer: https://mplsoccer.readthedocs.io/en/latest/index.html <br>
+Friends of Tracking | Laurie Shaw: https://github.com/Friends-of-Tracking-Data-FoTD/LaurieOnTracking
 
 ## References
 
