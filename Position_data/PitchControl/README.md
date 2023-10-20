@@ -235,7 +235,7 @@ Function to plot players and pitch control on a pitch. Calls *pitch_control_at_f
 
 Laurie Shaw's excellent GitHub at friends of tracking - https://github.com/Friends-of-Tracking-Data-FoTD/LaurieOnTracking/tree/master -
 and the video series - https://www.youtube.com/watch?v=VX3T-4lB2o0 - <br>
-
+Data Metrica - https://github.com/metrica-sports/sample-data <br>
 
 
 ## References
