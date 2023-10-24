@@ -230,6 +230,35 @@ Function to plot players and pitch control on a pitch. Calls *pitch_control_at_f
 + *fig, ax (figure)* - pitch control plot
 
 
+### animate_pitch_control
+                        (td_object, start_frame, end_frame, attacking_team='Home', velocities=False, params=None,
+                         n_grid_cells_x=50, frames_per_second=25, fname='Animated_Clip', pitch_col='#1c380e',
+                         line_col='white', colors=['red', 'blue', 'black'], PlayerAlpha=0.7, fpath=None,
+                         progress_steps = [0.25, 0.5, 0.75])
+
+Function to animate a set of frames of plotted players including pitch control. <br>
+This can take quite a while so a small number of frames and the use of *progress_steps* is recommended! <br>
+
+**Parameters**
+
++ *td_object (tracking_data class object)* - An object of the tracking_data class containing data and all required attributes 
++ *start_frame*, *end_frame (int)* - Frame range for the animation
++ *attacking_team (str)* - which team is to be interpreted as attacking team (optimally in possession at frame); home or away
++ *velocites (boolean)* - decides whether players' velocities will be plotted
++ *params (dict)* - Model params dictionary as created by function *default_model_params*; if None default parameters will be used in *pitch_control_at_frame*
++ *n_grid_cells_x (int)* - number of cells in the grid on the x-axis; number of grid cells in y direction will be determined based on n_grid_cells_x and pitch dimensions
++ *frames_per_second (int)* - frames per second to assume when generating the movie. Default is 25.
++ *fname (str)* - intended file name to store the clip. Defaults to "Animated_Clip"
++ *pitch_col (color)* - color of the pitch
++ *line_col (color)* - color of the pitch lines
++ *colors (list, color)* - list of colors for home team, away team and the ball (in that order)
++ *PlayerAlpha (float)* - Opacity/alpha of velocity quiver
++ *fpath (str)* - Directory to save the Clip. If None Clip will be stored in current directory.
++ *progress_steps (list, float)* - percentages (in decimals) to be displayed as progress steps; if None no progress will be displayed
+
+**Returns**
+
+
 
 ## Credits
 
