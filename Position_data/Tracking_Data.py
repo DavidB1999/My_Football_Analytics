@@ -349,7 +349,8 @@ class tracking_data:
                 frame_minute = int(data[self.time_col][i] / 60.)
                 frame_second = (data[self.time_col][i] / 60. - frame_minute) * 60.
                 timestring = "%d:%1.2f" % (frame_minute, frame_second)
-                objs = ax.text(field_dimen[0] / 2, field_dimen[1] + 1, timestring, fontsize=14)
+                objs = ax.text(field_dimen[0]/2 - 0.05*field_dimen[0], self.y_range_pitch[1] + 0.05*self.y_range_pitch[1],
+                               timestring, fontsize=14)
                 figobjs.append(objs)
                 writer.grab_frame()
                 # Delete all axis objects (other than pitch lines) in preperation for next frame

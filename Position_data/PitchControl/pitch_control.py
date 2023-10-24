@@ -1,7 +1,11 @@
 import pandas as pd
 import numpy as np
 from Tracking_Data import tracking_data  # wrong here but necessary for use in notebooks
+from Pitch.My_Pitch import \
+    myPitch  # might need adaptation of path depending on whether it is used in pycharm or jupyter notebook
+from mplsoccer import Pitch
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
 
 # class player to bundle all steps for each player
@@ -71,7 +75,7 @@ def default_model_params(time_to_control_veto=3, mpa=7, mps=5, rt=0.7, tti_s=0.4
 
 
 class player:
-    def __init__(self, data, pid, GK, team, params=None,frame=None):
+    def __init__(self, data, pid, GK, team, params=None, frame=None):
         self.id = str(pid)
         self.org_data = data
         self.team = team
@@ -115,7 +119,8 @@ class player:
         # reaction time and interception location
         # np.linalg.norm returns norm matrix of second order / euclidean norm
         # equating to the direct distance / hypotenuse of pythagoras
-        self.time_to_intercept = self.params['reaction_time'] + np.linalg.norm(r_final - r_reaction) / self.params['max_player_speed']
+        self.time_to_intercept = self.params['reaction_time'] + np.linalg.norm(r_final - r_reaction) / self.params[
+            'max_player_speed']
 
         return self.time_to_intercept
 
@@ -248,8 +253,8 @@ def pitch_control_at_target(target_position, attacking_players, defending_player
         return PPCFatt[i - 1], PPCFdef[i - 1]
 
 
-def plot_pitch_control(td_object, frame, attacking_team='Home', PPCF=None, velocities=False, params=None, n_grid_cells_x=50):
-
+def plot_pitch_control(td_object, frame, attacking_team='Home', PPCF=None, velocities=False, params=None,
+                       n_grid_cells_x=50):
     if PPCF is None:
         PPCF, xgrid, ygrid = pitch_control_at_frame(frame, td_object, params=params, n_grid_cells_x=n_grid_cells_x)
 
@@ -259,5 +264,112 @@ def plot_pitch_control(td_object, frame, attacking_team='Home', PPCF=None, veloc
         cmap = 'bwr'
     else:
         cmap = 'brw_r'
-    ax.imshow(np.flipud(PPCF), extent=(min(td_object.x_range_pitch), max(td_object.x_range_pitch), min(td_object.y_range_pitch), max(td_object.y_range_pitch)), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
+    ax.imshow(np.flipud(PPCF), extent=(
+        min(td_object.x_range_pitch), max(td_object.x_range_pitch), min(td_object.y_range_pitch),
+        max(td_object.y_range_pitch)), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
     return fig, ax
+
+
+def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Home', velocities=False, params=None,
+                          n_grid_cells_x=50, frames_per_second=25, fname='Animated_Clip', pitch_col='#1c380e',
+                          line_col='white', colors=['red', 'blue', 'black'], PlayerAlpha=0.7, fpath=None,
+                          progress_steps = [0.25, 0.5, 0.75]):
+    data = td_object.data
+    if start_frame == 0:
+        data = data.iloc[start_frame: end_frame]
+    else:
+        data = data.iloc[start_frame - 1: end_frame]
+    index = data.index
+    index_range = end_frame-start_frame
+
+    if progress_steps is not None:
+        progress_dict = dict()
+        for p in progress_steps:
+            progress_dict[p] = False
+
+
+
+    field_dimen = (max(td_object.dimensions['x']['pitch']), max(td_object.dimensions['y']['pitch']))
+
+    if fpath is not None:
+        fname = fpath + '/' + fname + '.mp4'  # path and filename
+    else:
+        fname = fname + '.mp4'
+
+    FFMpegWriter = animation.writers['ffmpeg']
+    metadata = dict(title='Pitch Control animation', artist='Matplotlib',
+                    comment=f'{td_object.data_source} based pitch control clip')
+    writer = FFMpegWriter(fps=frames_per_second, metadata=metadata)
+
+    # create pitch
+    if td_object.scale_to_pitch == 'mplsoccer':
+        pitch = Pitch(pitch_color=pitch_col, line_color=line_col)
+        fig, ax = plt.subplots()
+        fig.set_facecolor(pitch_col)
+        pitch.draw(ax=ax)
+    elif td_object.scale_to_pitch == 'myPitch':
+        pitch = myPitch(grasscol=pitch_col)
+        fig, ax = plt.subplots()  # figsize=(13.5, 8)
+        fig.set_facecolor(pitch_col)
+        pitch.plot_pitch(ax=ax)
+    else:
+        raise ValueError(f'Unfortunately the pitch {td_object.scale_to_pitch} is not yet supported by this function!')
+
+    fig.set_tight_layout(True)
+    print("Generating your clip...") # , end=''
+
+    # determine colormap
+    if attacking_team == 'Home':
+        cmap = 'bwr'
+    else:
+        cmap = 'brw_r'
+
+    with writer.saving(fig, fname, 100):
+        for i in index:
+            figobjs = []  # this is used to collect up all the axis objects so that they can be deleted after each iteration
+            # for both teams
+            PPCF, xgrid, ygrid = pitch_control_at_frame(i, td_object, params=params, n_grid_cells_x=n_grid_cells_x)
+            pc = ax.imshow(np.flipud(PPCF), extent=(
+                min(td_object.x_range_pitch), max(td_object.x_range_pitch), min(td_object.y_range_pitch),
+                max(td_object.y_range_pitch)), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
+            figobjs.append(pc)
+            for team, color in zip(['home', 'away', 'ball'], colors):
+                # get x and y values
+                x_values = data[td_object.dimensions[td_object.x_cols_pattern][''.join([team, '_columns'])]].loc[i]
+                y_values = data[td_object.dimensions[td_object.y_cols_pattern][''.join([team, '_columns'])]].loc[i]
+                objs = ax.scatter(x=x_values, y=y_values, s=20, c=color)
+                figobjs.append(objs)
+
+                if velocities and team != 'ball':
+                    vx_columns = ['{}_vx'.format(c[:-2]) for c in
+                                  list(td_object.dimensions[td_object.x_cols_pattern][''.join(
+                                      [team, '_columns'])])]  # column header for player x positions
+                    vy_columns = ['{}_vy'.format(c[:-2]) for c in
+                                  list(td_object.dimensions[td_object.y_cols_pattern][''.join(
+                                      [team, '_columns'])])]  # column header for player y positions
+                    objs = ax.quiver(x_values, y_values, data[vx_columns].loc[i], data[vy_columns].loc[i],
+                                     color=color, angles='xy', scale_units='xy', scale=1, width=0.0015,
+                                     headlength=5, headwidth=3, alpha=PlayerAlpha)
+                    figobjs.append(objs)
+            frame_minute = int(data[td_object.time_col][i] / 60.)
+            frame_second = (data[td_object.time_col][i] / 60. - frame_minute) * 60.
+            timestring = "%d:%1.2f" % (frame_minute, frame_second)
+            objs = ax.text(field_dimen[0]/2 - 0.05*field_dimen[0], td_object.y_range_pitch[1] + 0.05*td_object.y_range_pitch[1],
+                           timestring, fontsize=14)
+            figobjs.append(objs)
+            writer.grab_frame()
+            # Delete all axis objects (other than pitch lines) in preparation for next frame
+            for figobj in figobjs:
+                figobj.remove()
+
+            if progress_steps is not None:
+                for key in progress_dict.keys():
+                    if (i - start_frame) / index_range >= key and not progress_dict[key]:
+                        print(f'{key * 100}% done!')
+                        progress_dict[key] = True
+                        break
+
+
+    print("All done!")
+    plt.clf()
+    plt.close(fig)
