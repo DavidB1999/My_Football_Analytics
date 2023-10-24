@@ -369,7 +369,6 @@ def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Hom
                         progress_dict[key] = True
                         break
 
-
     print("All done!")
     plt.clf()
     plt.close(fig)
