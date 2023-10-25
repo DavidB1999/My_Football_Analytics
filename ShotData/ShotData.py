@@ -181,35 +181,19 @@ class shot_data:
 
             # for both the x and y coordinates
             for dim in dimensions.keys():
-                # if the data we want to rescale, is oriented in the usual direction (left to right, bottom to top)
-                # we calculate like this
-                if dimensions[dim]['delta_data'] > 0:
-                    # rescale home team coordinates
-                    data.loc[self.filter1, dim] = data.loc[self.filter1, dim].apply(
-                        lambda x: dimensions[dim]['pitch'][0] + x * dimensions[dim]['scaling_factor'])
+                # rescale home team coordinates
+                data.loc[self.filter1, dim] = data.loc[self.filter1, dim].apply(
+                    lambda x: dimensions[dim]['pitch'][0] + (x + dimensions[dim]['data'][0] * -1) * dimensions[dim]['scaling_factor'])
 
-                    # rescale away team and if necessary mirror
-                    if dim in self.mirror_away:
-                        data.loc[self.filter2, dim] = data.loc[self.filter2, dim].apply(
-                            lambda x: dimensions[dim]['pitch'][1] - x * dimensions[dim]['scaling_factor'])
-                    else:
-                        data.loc[self.filter2, dim] = data.loc[self.filter2, dim].apply(
-                            lambda x: dimensions[dim]['pitch'][0] + x * dimensions[dim]['scaling_factor'])
+                # rescale away team and if necessary mirror
+                if dim in self.mirror_away:
+                    data.loc[self.filter2, dim] = data.loc[self.filter2, dim].apply(
+                        lambda x: dimensions[dim]['pitch'][1] - (x + dimensions[dim]['data'][0] * -1) * dimensions[dim]['scaling_factor'])
+                else:
+                    data.loc[self.filter2, dim] = data.loc[self.filter2, dim].apply(
+                        lambda x: dimensions[dim]['pitch'][0] + (x + dimensions[dim]['data'][0] * -1) * dimensions[dim]['scaling_factor'])
 
-                # if the data we want to rescale is mirrored in dim
-                # we calculate like this
-                elif dimensions[dim]['delta_data'] < 0:
-                    # rescale home team coordinates
-                    data.loc[self.filter1, dim] = data.loc[self.filter1, dim].apply(
-                        lambda x: dimensions[dim]['pitch'][1] + x * dimensions[dim]['scaling_factor'])
 
-                    # rescale away team and if necessary mirror
-                    if dim in self.mirror_away:
-                        data.loc[self.filter2, dim] = data.loc[self.filter2, dim].apply(
-                            lambda x: dimensions[dim]['pitch'][0] - x * dimensions[dim]['scaling_factor'])
-                    else:
-                        data.loc[self.filter2, dim] = data.loc[self.filter2, dim].apply(
-                            lambda x: dimensions[dim]['pitch'][1] + x * dimensions[dim]['scaling_factor'])
         elif self.data_source == 'Statsbomb':
             # collect relevant columns
             player = data[self.player_col]
@@ -236,35 +220,17 @@ class shot_data:
 
             # for both the x and y coordinates
             for dim in dimensions.keys():
-                # if the data we want to rescale, is oriented in the usual direction (left to right, bottom to top)
-                # we calculate like this
-                if dimensions[dim]['delta_data'] > 0:
-                    # rescale home team coordinates
-                    sd.loc[self.filter1, dim] = sd.loc[self.filter1, dim].apply(
-                        lambda x: dimensions[dim]['pitch'][0] + x * dimensions[dim]['scaling_factor'])
+                # rescale home team coordinates
+                sd.loc[self.filter1, dim] = sd.loc[self.filter1, dim].apply(
+                    lambda x: dimensions[dim]['pitch'][0] + (x + dimensions[dim]['data'][0] * -1) * dimensions[dim]['scaling_factor'])
 
-                    # rescale away team and if necessary mirror
-                    if dim in self.mirror_away:
-                        sd.loc[self.filter2, dim] = sd.loc[self.filter2, dim].apply(
-                            lambda x: dimensions[dim]['pitch'][1] - x * dimensions[dim]['scaling_factor'])
-                    else:
-                        sd.loc[self.filter2, dim] = sd.loc[self.filter2, dim].apply(
-                            lambda x: dimensions[dim]['pitch'][0] + x * dimensions[dim]['scaling_factor'])
-
-                # if the data we want to rescale is mirrored in dim
-                # we calculate like this
-                elif dimensions[dim]['delta_data'] < 0:
-                    # rescale home team coordinates
-                    sd.loc[self.filter1, dim] = sd.loc[self.filter1, dim].apply(
-                        lambda x: dimensions[dim]['pitch'][1] + x * dimensions[dim]['scaling_factor'])
-
-                    # rescale away team and if necessary mirror
-                    if dim in self.mirror_away:
-                        sd.loc[self.filter2, dim] = sd.loc[self.filter2, dim].apply(
-                            lambda x: dimensions[dim]['pitch'][0] - x * dimensions[dim]['scaling_factor'])
-                    else:
-                        sd.loc[self.filter2, dim] = sd.loc[self.filter2, dim].apply(
-                            lambda x: dimensions[dim]['pitch'][1] + x * dimensions[dim]['scaling_factor'])
+                # rescale away team and if necessary mirror
+                if dim in self.mirror_away:
+                    sd.loc[self.filter2, dim] = sd.loc[self.filter2, dim].apply(
+                        lambda x: dimensions[dim]['pitch'][1] - (x + dimensions[dim]['data'][0] * -1) * dimensions[dim]['scaling_factor'])
+                else:
+                    sd.loc[self.filter2, dim] = sd.loc[self.filter2, dim].apply(
+                        lambda x: dimensions[dim]['pitch'][0] + (x + dimensions[dim]['data'][0] * -1) * dimensions[dim]['scaling_factor'])
 
             data = sd
 
@@ -363,10 +329,10 @@ class shot_data:
                                  f'{xg_text_x}, {xg_text_y}!')
 
             plt.text(x=xg_text_x[0] * xmax, y=xg_text_y[0] * ymax,
-                     s=str(self.xG_score(team='home')),
+                     s=str(round(self.xG_score(team='home'), 2)),
                      fontsize=40, weight='bold', c=color1, alpha=0.25, ha='center', va='center')
             plt.text(x=xg_text_x[1] * xmax, y=xg_text_y[1] * ymax,
-                     s=str(self.xG_score(team='away')),
+                     s=str(round(self.xG_score(team='away'), 2)),
                      fontsize=40, weight='bold', c=color2, alpha=0.25, ha='center', va='center')
         if result_text:
             # determine positions if not specified
