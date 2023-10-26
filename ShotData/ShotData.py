@@ -145,25 +145,25 @@ class shot_data:
         data = self.org_data.copy(deep=True)
 
         # dimensions dictionary for convenience
-        dimensions = {self.y_col: {
+        self.dimensions = {self.y_col: {
             'data': self.y_range_data,
             'pitch': self.y_range_pitch},
             self.x_col: {
                 'data': self.x_range_data,
                 'pitch': self.x_range_pitch}
         }
-        for dim in dimensions.keys():
-            datamin = dimensions[dim]['data'][0]
-            datamax = dimensions[dim]['data'][1]
+        for dim in self.dimensions.keys():
+            datamin = self.dimensions[dim]['data'][0]
+            datamax = self.dimensions[dim]['data'][1]
             delta_data = datamax - datamin
-            dimensions[dim]['delta_data'] = delta_data
-            pitchmin = dimensions[dim]['pitch'][0]
-            pitchmax = dimensions[dim]['pitch'][1]
+            self.dimensions[dim]['delta_data'] = delta_data
+            pitchmin = self.dimensions[dim]['pitch'][0]
+            pitchmax = self.dimensions[dim]['pitch'][1]
             delta_pitch = pitchmax - pitchmin
-            dimensions[dim]['delta_pitch'] = delta_pitch
+            self.dimensions[dim]['delta_pitch'] = delta_pitch
 
             # print(delta_data, delta_pitch)
-            dimensions[dim]['scaling_factor'] = delta_pitch / delta_data
+            self.dimensions[dim]['scaling_factor'] = delta_pitch / delta_data
             # print(scaling_factor)
             # print(data0)
             # print(data1)
@@ -180,18 +180,18 @@ class shot_data:
             data[self.minute_col] = data[self.minute_col].astype(int)
 
             # for both the x and y coordinates
-            for dim in dimensions.keys():
+            for dim in self.dimensions.keys():
                 # rescale home team coordinates
                 data.loc[self.filter1, dim] = data.loc[self.filter1, dim].apply(
-                    lambda x: dimensions[dim]['pitch'][0] + (x + dimensions[dim]['data'][0] * -1) * dimensions[dim]['scaling_factor'])
+                    lambda x: self.dimensions[dim]['pitch'][0] + (x + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor'])
 
                 # rescale away team and if necessary mirror
                 if dim in self.mirror_away:
                     data.loc[self.filter2, dim] = data.loc[self.filter2, dim].apply(
-                        lambda x: dimensions[dim]['pitch'][1] - (x + dimensions[dim]['data'][0] * -1) * dimensions[dim]['scaling_factor'])
+                        lambda x: self.dimensions[dim]['pitch'][1] - (x + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor'])
                 else:
                     data.loc[self.filter2, dim] = data.loc[self.filter2, dim].apply(
-                        lambda x: dimensions[dim]['pitch'][0] + (x + dimensions[dim]['data'][0] * -1) * dimensions[dim]['scaling_factor'])
+                        lambda x: self.dimensions[dim]['pitch'][0] + (x + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor'])
 
 
         elif self.data_source == 'Statsbomb':
@@ -219,18 +219,18 @@ class shot_data:
                                        self.x_col, self.y_col, self.xg_col])
 
             # for both the x and y coordinates
-            for dim in dimensions.keys():
+            for dim in self.dimensions.keys():
                 # rescale home team coordinates
                 sd.loc[self.filter1, dim] = sd.loc[self.filter1, dim].apply(
-                    lambda x: dimensions[dim]['pitch'][0] + (x + dimensions[dim]['data'][0] * -1) * dimensions[dim]['scaling_factor'])
+                    lambda x: self.dimensions[dim]['pitch'][0] + (x + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor'])
 
                 # rescale away team and if necessary mirror
                 if dim in self.mirror_away:
                     sd.loc[self.filter2, dim] = sd.loc[self.filter2, dim].apply(
-                        lambda x: dimensions[dim]['pitch'][1] - (x + dimensions[dim]['data'][0] * -1) * dimensions[dim]['scaling_factor'])
+                        lambda x: self.dimensions[dim]['pitch'][1] - (x + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor'])
                 else:
                     sd.loc[self.filter2, dim] = sd.loc[self.filter2, dim].apply(
-                        lambda x: dimensions[dim]['pitch'][0] + (x + dimensions[dim]['data'][0] * -1) * dimensions[dim]['scaling_factor'])
+                        lambda x: self.dimensions[dim]['pitch'][0] + (x + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor'])
 
             data = sd
 
