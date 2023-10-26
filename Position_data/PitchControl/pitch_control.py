@@ -10,18 +10,18 @@ import matplotlib.animation as animation
 
 # class player to bundle all steps for each player
 
-def get_player_from_data(td_object, pid, data=None, frame=None, params=None):
+def get_player_from_data(td_object, pid, team, data=None, frame=None, params=None):
     if params is None:
         params = default_model_params()
     if data is None:
         data = td_object.data
-    GK = str(pid) in [td_object.Home_GK, td_object.Away_GK]
+    GK = str(pid) == td_object.Home_GK if team == 'Home' else str(pid) == td_object.Away_GK
     if frame is None:
-        player_data = data.filter(regex=fr'_{pid}_|Period|Time')
+        player_data = data.filter(regex=fr'{team}_{pid}_|Period|Time')
         team = player_data.columns[2].split('_')[0]
         p_object = player(data=player_data, pid=pid, GK=GK, team=team, params=params, frame=frame)
     else:
-        player_data = data.filter(regex=fr'_{pid}_|Period|Time')
+        player_data = data.filter(regex=fr'{team}_{pid}_|Period|Time')
         player_data = player_data.loc[frame]
         team = player_data.keys()[2].split('_')[0]
         p_object = player(data=player_data, pid=pid, GK=GK, team=team, params=params, frame=frame)
@@ -32,12 +32,13 @@ def get_all_players(td_object, frame=None, teams=['Home', 'Away'], params=None):
     if params is None:
         params = default_model_params()
     data = td_object.data
-    player_ids = np.unique([c.split('_')[1] for c in data.keys() if c[:4] in teams])
     players = []
-    for p in player_ids:
-        c_player = get_player_from_data(td_object=td_object, pid=p, frame=frame, params=params)
-        if c_player.inframe:  # to check data is not nan i.e. on the pitch
-            players.append(c_player)
+    for team in teams:
+        player_ids = np.unique([c.split('_')[1] for c in data.keys() if c[:4] == team])
+        for p in player_ids:
+            c_player = get_player_from_data(td_object=td_object, pid=p, frame=frame, params=params, team=team)
+            if c_player.inframe:  # to check data is not nan i.e. on the pitch
+                players.append(c_player)
     return players
 
 
@@ -98,7 +99,10 @@ class player:
             return f'Player {self.id} playing for the {self.team} team. Data for frame {self.frame}. '
 
     def get_position(self):
-        position = np.array([self.org_data[self.player_name + '_x'], self.org_data[self.player_name + '_y']])
+        if self.frame is None:
+            position = np.array([self.org_data[self.player_name + '_x'].astype('float'), self.org_data[self.player_name + '_y'].astype('float')])
+        else:
+            position = np.array([self.org_data[self.player_name + '_x'], self.org_data[self.player_name + '_y']])
         inframe = not np.any(np.isnan(position))
         return position, inframe
 
@@ -145,7 +149,7 @@ def pitch_control_at_frame(frame, td_object, n_grid_cells_x=50, offside=False, a
 
     # get current ball position
     ball_start_pos = data.filter(regex=fr'ball_')
-    ball_start_pos = ball_start_pos.loc[frame]
+    ball_start_pos = ball_start_pos.loc[frame].astype('float')
 
     n_grid_cells_y = int(n_grid_cells_x * y_range / x_range)
 
@@ -335,8 +339,8 @@ def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Hom
             figobjs.append(pc)
             for team, color in zip(['home', 'away', 'ball'], colors):
                 # get x and y values
-                x_values = data[td_object.dimensions[td_object.x_cols_pattern][''.join([team, '_columns'])]].loc[i]
-                y_values = data[td_object.dimensions[td_object.y_cols_pattern][''.join([team, '_columns'])]].loc[i]
+                x_values = data[td_object.dimensions[td_object.x_cols_pattern][''.join([team, '_columns'])]].loc[i].astype('float')
+                y_values = data[td_object.dimensions[td_object.y_cols_pattern][''.join([team, '_columns'])]].loc[i].astype('float')
                 objs = ax.scatter(x=x_values, y=y_values, s=20, c=color)
                 figobjs.append(objs)
 
@@ -346,7 +350,7 @@ def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Hom
                                       [team, '_columns'])])]  # column header for player x positions
                     vy_columns = ['{}_vy'.format(c[:-2]) for c in
                                   list(td_object.dimensions[td_object.y_cols_pattern][''.join(
-                                      [team, '_columns'])])]  # column header for player y positions
+                                      [team, '_columns'])])] # column header for player y positions
                     objs = ax.quiver(x_values, y_values, data[vx_columns].loc[i], data[vy_columns].loc[i],
                                      color=color, angles='xy', scale_units='xy', scale=1, width=0.0015,
                                      headlength=5, headwidth=3, alpha=PlayerAlpha)

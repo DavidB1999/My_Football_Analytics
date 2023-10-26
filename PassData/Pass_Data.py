@@ -130,7 +130,7 @@ class pass_data():
         elif (self.x_range_pitch is None) or (self.y_range_pitch is None):
             raise ValueError(f'You have not selected a pitch type to which the data is supposed to be scaled.'
                              f'Neither did you supply custom ranges via "x_range_pitch" and "y_range_pitch"'
-                             f'Either supply one of {supported_pitch_types} to "scale_to_pitch" or '
+                             f'Either supply one of {self.supported_pitch_types} to "scale_to_pitch" or '
                              f'Supply tuples of data ranges to "x_range_pitch" and "y_range_pitch".')
 
         # on initializing the data is rescaled, but I can always initialize again based on org_data!
@@ -253,33 +253,17 @@ class pass_data():
 
             for c in coordinates:
                 dim = re.sub(pattern='_.*', repl='', string=c)
-                if dimensions[dim]['delta_data'] > 0:
-                    # rescale home team coordinates
-                    pada.loc[self.filter1, c] = pada.loc[self.filter1, c].apply(
-                        lambda x: dimensions[dim]['pitch'][0] + x * dimensions[dim]['scaling_factor'])
+                # rescale home team coordinates
+                pada.loc[self.filter1, c] = pada.loc[self.filter1, c].apply(
+                    lambda x: dimensions[dim]['pitch'][0] + (x + dimensions[dim]['data'][0] * -1) * dimensions[dim]['scaling_factor'])
 
-                    # rescale away team and if necessary mirror
-                    if dim in self.mirror_away:
-                        pada.loc[self.filter2, c] = pada.loc[self.filter2, c].apply(
-                            lambda x: dimensions[dim]['pitch'][1] - x * dimensions[dim]['scaling_factor'])
-                    else:
-                        pada.loc[self.filter2, c] = pada.loc[self.filter2, c].apply(
-                            lambda x: dimensions[dim]['pitch'][0] + x * dimensions[dim]['scaling_factor'])
-
-                # if the data we want to rescale is mirrored in dim
-                # we calculate like this
-                elif dimensions[dim]['delta_data'] < 0:
-                    # rescale home team coordinates
-                    pada.loc[self.filter1, c] = pada.loc[self.filter1, c].apply(
-                        lambda x: dimensions[dim]['pitch'][1] + x * dimensions[dim]['scaling_factor'])
-
-                    # rescale away team and if necessary mirror
-                    if dim in self.mirror_away:
-                        pada.loc[self.filter2, c] = pada.loc[self.filter2, c].apply(
-                            lambda x: dimensions[dim]['pitch'][0] - x * dimensions[dim]['scaling_factor'])
-                    else:
-                        pada.loc[self.filter2, c] = pada.loc[self.filter2, c].apply(
-                            lambda x: dimensions[dim]['pitch'][1] + x * dimensions[dim]['scaling_factor'])
+                # rescale away team and if necessary mirror
+                if dim in self.mirror_away:
+                    pada.loc[self.filter2, c] = pada.loc[self.filter2, c].apply(
+                        lambda x: dimensions[dim]['pitch'][1] - (x + dimensions[dim]['data'][0] * -1) * dimensions[dim]['scaling_factor'])
+                else:
+                    pada.loc[self.filter2, c] = pada.loc[self.filter2, c].apply(
+                        lambda x: dimensions[dim]['pitch'][0] + (x + dimensions[dim]['data'][0] * -1) * dimensions[dim]['scaling_factor'])
 
                 data = pada
 

@@ -15,7 +15,7 @@ class tracking_data:
                  mirror_second_half=None, home=None, away=None, period_col=None,
                  time_col=None):
 
-        self.supported_data_sources = ['metrica']
+        self.supported_data_sources = ['metrica', 'dfl']
 
         # selfs independent of data source and pitch type
         self.org_data = data
@@ -49,6 +49,27 @@ class tracking_data:
                 self.mirror_away = []
 
             # standard naming in metrica data
+            if self.x_cols_pattern is None:
+                self.x_cols_pattern = 'x'
+            if self.y_cols_pattern is None:
+                self.y_cols_pattern = 'y'
+            if self.period_column is None:
+                self.period_column = 'Period'
+            if self.time_col is None:
+                self.time_col = 'Time [s]'
+
+        elif self.data_source == 'dfl':
+            # standard coordinates of dfl tracking data
+            if self.x_range_data is None:
+                self.x_range_data = (-50, 50)
+            if self.y_range_data is None:
+                self.y_range_data = (-34, 34)
+            # teams switch direction between halves in dfl data
+            if self.mirror_second_half is None:
+                self.mirror_second_half = True
+            if self.mirror_away is None:
+                self.mirror_away = []
+            # standard naming in dfl data
             if self.x_cols_pattern is None:
                 self.x_cols_pattern = 'x'
             if self.y_cols_pattern is None:
@@ -132,48 +153,31 @@ class tracking_data:
 
         # for both x and y (or whatever they are called)
         for dim in self.dimensions.keys():
-            # if data is oriented in the correct way
-            if self.dimensions[dim]['delta_data'] > 0:
-                # home
-                data[self.dimensions[dim]['home_columns']] = self.dimensions[dim]['pitch'][0] + data[
-                    self.dimensions[dim]['home_columns']] * self.dimensions[dim]['scaling_factor']
-                # ball
-                data[self.dimensions[dim]['ball_columns']] = self.dimensions[dim]['pitch'][0] + data[
-                    self.dimensions[dim]['ball_columns']] * self.dimensions[dim]['scaling_factor']
+            # home
+            data[self.dimensions[dim]['home_columns']] = self.dimensions[dim]['pitch'][0] + (data[
+                self.dimensions[dim]['home_columns']] + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor']
+            # ball
+            data[self.dimensions[dim]['ball_columns']] = self.dimensions[dim]['pitch'][0] + (data[
+                self.dimensions[dim]['ball_columns']] + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor']
 
-                # away (mirror away?)
-                if dim in self.mirror_away:
-                    data[self.dimensions[dim]['away_columns']] = self.dimensions[dim]['pitch'][1] - data[
-                        self.dimensions[dim]['away_columns']] * self.dimensions[dim]['scaling_factor']
-                else:
-                    data[self.dimensions[dim]['away_columns']] = self.dimensions[dim]['pitch'][0] + data[
-                        self.dimensions[dim]['away_columns']] * self.dimensions[dim]['scaling_factor']
-            # else if data is not oriented in the correct way
-            elif self.dimensions[dim]['delta_data'] < 0:
-                # home
-                data[self.dimensions[dim]['home_columns']] = self.dimensions[dim]['pitch'][1] + data[
-                    self.dimensions[dim]['home_columns']] * self.dimensions[dim]['scaling_factor']
-                # ball
-                data[self.dimensions[dim]['ball_columns']] = self.dimensions[dim]['pitch'][1] + data[
-                    self.dimensions[dim]['ball_columns']] * self.dimensions[dim]['scaling_factor']
-                # away (mirror away?)
-                if dim in self.mirror_away:
-                    data[self.dimensions[dim]['away_columns']] = self.dimensions[dim]['pitch'][0] - data[
-                        self.dimensions[dim]['away_columns']] * self.dimensions[dim]['scaling_factor']
-                else:
-                    data[self.dimensions[dim]['away_columns']] = self.dimensions[dim]['pitch'][1] + data[
-                        self.dimensions[dim]['away_columns']] * self.dimensions[dim]['scaling_factor']
+            # away (mirror away?)
+            if dim in self.mirror_away:
+                data[self.dimensions[dim]['away_columns']] = self.dimensions[dim]['pitch'][1] - (data[
+                    self.dimensions[dim]['away_columns']] + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor']
+            else:
+                data[self.dimensions[dim]['away_columns']] = self.dimensions[dim]['pitch'][0] + (data[
+                    self.dimensions[dim]['away_columns']] + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor']
 
         if self.mirror_second_half:
             half_filter = data[self.period_column] == 2
             # home
-            data.loc[half_filter, self.dimensions[dim]['home_columns']] = max(self.dimensions[dim]['pitch']) - \
-                                                                          data[self.dimensions[dim]['home_columns']][
-                                                                              half_filter]
+            data.loc[half_filter, self.dimensions[dim]['home_columns']] = self.dimensions[dim]['pitch'][1] - \
+                                                                          (data[self.dimensions[dim]['home_columns']][
+                                                                              half_filter] + self.dimensions[dim]['data'][0] * -1) *1
             # away
-            data.loc[half_filter, self.dimensions[dim]['away_columns']] = max(self.dimensions[dim]['pitch']) - \
-                                                                          data[self.dimensions[dim]['away_columns']][
-                                                                              half_filter]
+            data.loc[half_filter, self.dimensions[dim]['away_columns']] = self.dimensions[dim]['pitch'][1] - \
+                                                                          (data[self.dimensions[dim]['away_columns']][
+                                                                              half_filter] + self.dimensions[dim]['data'][0] * -1) *1
         self.playing_direction_home = self.find_direction('Home', data)
         self.playing_direction_away = self.find_direction('Away', data)
         self.Home_GK = self.find_goalkeeper('Home', data)
@@ -206,13 +210,13 @@ class tracking_data:
         # for both teams
         for team, color in zip(['home', 'away', 'ball'], colors):
             # get x and y values
-            x_values = plot_data[self.dimensions[self.x_cols_pattern][''.join([team, '_columns'])]]
-            y_values = plot_data[self.dimensions[self.y_cols_pattern][''.join([team, '_columns'])]]
+            x_values = plot_data[self.dimensions[self.x_cols_pattern][''.join([team, '_columns'])]].astype('float')
+            y_values = plot_data[self.dimensions[self.y_cols_pattern][''.join([team, '_columns'])]].astype('float')
             ax.scatter(x=x_values, y=y_values, s=20, c=color)
             if velocities and team != 'ball':
                 vx_columns = ['{}_vx'.format(c[:-2]) for c in list(self.dimensions[self.x_cols_pattern][''.join([team, '_columns'])])]  # column header for player x positions
                 vy_columns = ['{}_vy'.format(c[:-2]) for c in list(self.dimensions[self.y_cols_pattern][''.join([team, '_columns'])])]  # column header for player y positions
-                ax.quiver(x_values, y_values, plot_data[vx_columns], plot_data[vy_columns], color=color,
+                ax.quiver(x_values, y_values, plot_data[vx_columns].astype('float'), plot_data[vy_columns].astype('float'), color=color,
                           angles='xy', scale_units='xy', scale=1, width=0.0015,
                           headlength=5, headwidth=3, alpha=PlayerAlpha)
 
@@ -240,7 +244,10 @@ class tracking_data:
         for player in player_ids:  # cycle through players individually
             # difference player positions in timestep dt to get unsmoothed estimate of velocity
             vx = data[player + "_x"].diff() / dt
+            vx = vx.astype('float')
             vy = data[player + "_y"].diff() / dt
+            vy = vy.astype('float')
+
 
             if maxspeed > 0:
                 # remove unsmoothed data points that exceed the maximum speed (these are most likely position errors)
@@ -333,13 +340,13 @@ class tracking_data:
                 # for both teams
                 for team, color in zip(['home', 'away', 'ball'], colors):
                     # get x and y values
-                    x_values = data[self.dimensions[self.x_cols_pattern][''.join([team, '_columns'])]].loc[i]
-                    y_values = data[self.dimensions[self.y_cols_pattern][''.join([team, '_columns'])]].loc[i]
+                    x_values = data[self.dimensions[self.x_cols_pattern][''.join([team, '_columns'])]].loc[i].astype('float')
+                    y_values = data[self.dimensions[self.y_cols_pattern][''.join([team, '_columns'])]].loc[i].astype('float')
                     objs = ax.scatter(x=x_values, y=y_values, s=20, c=color)
                     figobjs.append(objs)
                     if velocities and team != 'ball':
                         vx_columns = ['{}_vx'.format(c[:-2]) for c in list(self.dimensions[self.x_cols_pattern][''.join(
-                            [team, '_columns'])])]  # column header for player x positions
+                            [team, '_columns'])])] # column header for player x positions
                         vy_columns = ['{}_vy'.format(c[:-2]) for c in list(self.dimensions[self.y_cols_pattern][''.join(
                             [team, '_columns'])])]  # column header for player y positions
                         objs = ax.quiver(x_values, y_values, data[vx_columns].loc[i], data[vy_columns].loc[i],

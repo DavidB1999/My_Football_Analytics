@@ -134,15 +134,21 @@ $$ scalingfactor = s = \frac{\Delta b}{\Delta a}$$
 
 **Without mirroring:** <br>
 
-$$ \Delta a > 0: c_{new}  = b_1 + c \times s$$
+$$ c_{new}  = b_1 + (c + a_1\times (-1))\times s$$
 
-$$ \Delta a < 0: c_{new}  = b_2 + c \times s$$
+or 
+
+$$ c_{new}  = b_2 + (c + a_2\times (-1))\times s$$
 
 **With mirroring:** <br>
 
-$$ \Delta a > 0: c_{new}  = b_1 - c \times s$$
+$$ c_{new}  = b_2 - (c + a_1\times (-1))\times s$$
 
-$$ \Delta a < 0: c_{new}  = b_2 - c \times s$$
+or 
+
+$$ c_{new}  = b_1 -1 (c + a_2\times (-1))\times s$$
+
+To mirror after data has already been scaled just use 1 for s! <br>
 
 For more details check [Scaling_Reasoning.xlsx](../ShotData/Scaling_Reasoning.xlsx). <br>
 
