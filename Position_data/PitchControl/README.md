@@ -24,7 +24,7 @@ The code is based entirely on Laurie Shaw's code and videos and was adapted to w
 All adaptations were implemented for that purpose only and did not change anything of the underlying mechanism (unless I made a mistake :worried:)!<br>
 
 ### get_player_from_data
-                        (td_object, pid, data=None, frame=None, params=None)
+                        (td_object, pid, team, data=None, frame=None, params=None)
 
 This function has no direct equivalent in Shaw's code. 
 It simply returns a player class object for a player selected by ID from a tracking data class object. <br>
@@ -33,6 +33,7 @@ It simply returns a player class object for a player selected by ID from a track
 
 + *td_object (tracking_data class object)* - An object of the tracking_data class containing data and all required attributes 
 + *pid (int)* - player ID (as in the column names of td_object)
++ *team (str)* - the player's team (either "Home" or "Away")
 + *data (dataframe)* - To specify a dataframe; if None, the data of td_object will be used 
 + *frame (int)* - To select a frame from data; if None, the entire data for the player will be used
 + *params (dict)* - A dictionary with model parameters; if None default model parameters will be created by intended function and used
@@ -78,7 +79,7 @@ Parameter descriptions are copied from https://github.com/Friends-of-Tracking-Da
 + *tti_s (float)* - time to interception sigma: "Standard deviation of sigmoid function in Spearman 2018 ('s') that determines uncertainty in player arrival time"
 + *kappa_def (float)* - "kappa parameter in Spearman 2018 (=1.72 in the paper) that gives the advantage defending players to control ball, I have set to 1 so that home & away players have same ball control probability"
 + *lambda_att (float)* - "ball control parameter for attacking team"
-+ *kappa_gk (float)* - "make goal keepers must quicker to control ball (because they can catch it)"
++ *kappa_gk (float)* - "make goalkeepers must quicker to control ball (because they can catch it)"
 + *abs (float)* - average ball speed: "average ball travel speed in m/s"
 + *dt (float)* - int_dt: "integration timestep (dt)"
 + *mit (float)* - max_int_time: "upper limit on integral time"
