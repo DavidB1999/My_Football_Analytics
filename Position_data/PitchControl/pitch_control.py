@@ -222,17 +222,20 @@ def pitch_control_at_frame(frame, td_object, n_grid_cells_x=50, offside=False, a
 
     # get the players for both teams and sort by attacking and defending (formality)
     if attacking_team == 'Home':
-        attacking_players = get_all_players(td_object=td_object, frame=frame, teams=['Home'], params=params)
+        if offside:
+            attacking_players = check_offside(td_object=td_object, frame=frame, attacking_team='Home')
+        else:
+            attacking_players = get_all_players(td_object=td_object, frame=frame, teams=['Home'], params=params)
         defending_players = get_all_players(td_object=td_object, frame=frame, teams=['Away'], params=params)
     elif attacking_team == 'Away':
         attacking_players = get_all_players(td_object=td_object, frame=frame, teams=['Away'], params=params)
-        defending_players = get_all_players(td_object=td_object, frame=frame, teams=['Home'], params=params)
+        if offside:
+            defending_players = check_offside(td_object=td_object, frame=frame, attacking_team='Away')
+        else:
+            defending_players = get_all_players(td_object=td_object, frame=frame, teams=['Home'], params=params)
     else:
         raise ValueError('team must be either "Home" or "Away"!')
 
-    if offside:
-        # check offside with function to be included later
-        print('Offside check not available yet.')
 
     # calculate pitch pitch control model at each location on the pitch
     for i in range(len(ygrid)):
@@ -311,16 +314,17 @@ def pitch_control_at_target(target_position, attacking_players, defending_player
 
 
 def plot_pitch_control(td_object, frame, attacking_team='Home', PPCF=None, velocities=False, params=None,
-                       n_grid_cells_x=50):
+                       n_grid_cells_x=50, offside=False):
     if PPCF is None:
-        PPCF, xgrid, ygrid = pitch_control_at_frame(frame, td_object, params=params, n_grid_cells_x=n_grid_cells_x)
+        PPCF, xgrid, ygrid = pitch_control_at_frame(frame, td_object, params=params, n_grid_cells_x=n_grid_cells_x,
+                                                    offside=offside, attacking_team=attacking_team)
 
     fig, ax = td_object.plot_players(frame=frame, velocities=velocities)
 
     if attacking_team == 'Home':
         cmap = 'bwr'
     else:
-        cmap = 'brw_r'
+        cmap = 'bwr_r'
     ax.imshow(np.flipud(PPCF), extent=(
         min(td_object.x_range_pitch), max(td_object.x_range_pitch), min(td_object.y_range_pitch),
         max(td_object.y_range_pitch)), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
@@ -330,7 +334,7 @@ def plot_pitch_control(td_object, frame, attacking_team='Home', PPCF=None, veloc
 def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Home', velocities=False, params=None,
                           n_grid_cells_x=50, frames_per_second=25, fname='Animated_Clip', pitch_col='#1c380e',
                           line_col='white', colors=['red', 'blue', 'black'], PlayerAlpha=0.7, fpath=None,
-                          progress_steps = [0.25, 0.5, 0.75]):
+                          progress_steps = [0.25, 0.5, 0.75], offside=False):
     data = td_object.data
     if start_frame == 0:
         data = data.iloc[start_frame: end_frame]
@@ -385,7 +389,8 @@ def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Hom
         for i in index:
             figobjs = []  # this is used to collect up all the axis objects so that they can be deleted after each iteration
             # for both teams
-            PPCF, xgrid, ygrid = pitch_control_at_frame(i, td_object, params=params, n_grid_cells_x=n_grid_cells_x)
+            PPCF, xgrid, ygrid = pitch_control_at_frame(i, td_object, params=params, n_grid_cells_x=n_grid_cells_x,
+                                                        offside=offside, attacking_team=attacking_team)
             pc = ax.imshow(np.flipud(PPCF), extent=(
                 min(td_object.x_range_pitch), max(td_object.x_range_pitch), min(td_object.y_range_pitch),
                 max(td_object.y_range_pitch)), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
