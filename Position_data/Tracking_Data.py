@@ -377,6 +377,7 @@ class tracking_data:
         if data is None:
             data = self.data
 
+        # playing direction by teams average position at kick off
         x_columns = [c for c in data.columns if c[-2:].lower() == '_x' and c[:4] == team]
         mean_positions = data.iloc[0:frames][x_columns].mean()
         mean_pos = mean_positions.mean()
