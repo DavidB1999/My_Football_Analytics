@@ -154,23 +154,23 @@ class pass_data():
             raise ValueError(f'Oops! Something went wrong. The coordinates for rescaling are missing.')
 
         # dimensions dictionary for convenience
-        dimensions = {'y': {
+        self.dimensions = {'y': {
             'data': self.y_range_data,
             'pitch': self.y_range_pitch},
             'x': {
                 'data': self.x_range_data,
                 'pitch': self.x_range_pitch}
         }
-        for dim in dimensions.keys():
-            datamin = dimensions[dim]['data'][0]
-            datamax = dimensions[dim]['data'][1]
+        for dim in self.dimensions.keys():
+            datamin = self.dimensions[dim]['data'][0]
+            datamax = self.dimensions[dim]['data'][1]
             delta_data = datamax - datamin
-            dimensions[dim]['delta_data'] = delta_data
-            pitchmin = dimensions[dim]['pitch'][0]
-            pitchmax = dimensions[dim]['pitch'][1]
+            self.dimensions[dim]['delta_data'] = delta_data
+            pitchmin = self.dimensions[dim]['pitch'][0]
+            pitchmax = self.dimensions[dim]['pitch'][1]
             delta_pitch = pitchmax - pitchmin
-            dimensions[dim]['delta_pitch'] = delta_pitch
-            dimensions[dim]['scaling_factor'] = delta_pitch / delta_data
+            self.dimensions[dim]['delta_pitch'] = delta_pitch
+            self.dimensions[dim]['scaling_factor'] = delta_pitch / delta_data
 
         if self.data_source == 'Statsbomb':
             # collect relevant columns
@@ -255,15 +255,15 @@ class pass_data():
                 dim = re.sub(pattern='_.*', repl='', string=c)
                 # rescale home team coordinates
                 pada.loc[self.filter1, c] = pada.loc[self.filter1, c].apply(
-                    lambda x: dimensions[dim]['pitch'][0] + (x + dimensions[dim]['data'][0] * -1) * dimensions[dim]['scaling_factor'])
+                    lambda x: self.dimensions[dim]['pitch'][0] + (x + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor'])
 
                 # rescale away team and if necessary mirror
                 if dim in self.mirror_away:
                     pada.loc[self.filter2, c] = pada.loc[self.filter2, c].apply(
-                        lambda x: dimensions[dim]['pitch'][1] - (x + dimensions[dim]['data'][0] * -1) * dimensions[dim]['scaling_factor'])
+                        lambda x: self.dimensions[dim]['pitch'][1] - (x + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor'])
                 else:
                     pada.loc[self.filter2, c] = pada.loc[self.filter2, c].apply(
-                        lambda x: dimensions[dim]['pitch'][0] + (x + dimensions[dim]['data'][0] * -1) * dimensions[dim]['scaling_factor'])
+                        lambda x: self.dimensions[dim]['pitch'][0] + (x + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor'])
 
                 data = pada
 
