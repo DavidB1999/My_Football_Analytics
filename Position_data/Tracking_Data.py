@@ -69,15 +69,15 @@ class tracking_data:
                 self.mirror_second_half = True
             if self.mirror_away is None:
                 self.mirror_away = []
-            # standard naming in metrica data
+            # standard naming in dfl data
             if self.x_cols_pattern is None:
                 self.x_cols_pattern = 'x'
             if self.y_cols_pattern is None:
                 self.y_cols_pattern = 'y'
             if self.period_column is None:
-                self.period_column = 'GameSection'
+                self.period_column = 'Period'
             if self.time_col is None:
-                self.time_col = 'Time'
+                self.time_col = 'Time [s]'
         else:
             raise ValueError(f'You entered {self.data_source}. '
                              f'Unfortunately only {self.supported_data_sources} is/are supported at this stage.')
@@ -210,13 +210,13 @@ class tracking_data:
         # for both teams
         for team, color in zip(['home', 'away', 'ball'], colors):
             # get x and y values
-            x_values = plot_data[self.dimensions[self.x_cols_pattern][''.join([team, '_columns'])]]
-            y_values = plot_data[self.dimensions[self.y_cols_pattern][''.join([team, '_columns'])]]
+            x_values = plot_data[self.dimensions[self.x_cols_pattern][''.join([team, '_columns'])]].astype('float')
+            y_values = plot_data[self.dimensions[self.y_cols_pattern][''.join([team, '_columns'])]].astype('float')
             ax.scatter(x=x_values, y=y_values, s=20, c=color)
             if velocities and team != 'ball':
                 vx_columns = ['{}_vx'.format(c[:-2]) for c in list(self.dimensions[self.x_cols_pattern][''.join([team, '_columns'])])]  # column header for player x positions
                 vy_columns = ['{}_vy'.format(c[:-2]) for c in list(self.dimensions[self.y_cols_pattern][''.join([team, '_columns'])])]  # column header for player y positions
-                ax.quiver(x_values, y_values, plot_data[vx_columns], plot_data[vy_columns], color=color,
+                ax.quiver(x_values, y_values, plot_data[vx_columns].astype('float'), plot_data[vy_columns].astype('float'), color=color,
                           angles='xy', scale_units='xy', scale=1, width=0.0015,
                           headlength=5, headwidth=3, alpha=PlayerAlpha)
 
@@ -244,7 +244,10 @@ class tracking_data:
         for player in player_ids:  # cycle through players individually
             # difference player positions in timestep dt to get unsmoothed estimate of velocity
             vx = data[player + "_x"].diff() / dt
+            vx = vx.astype('float')
             vy = data[player + "_y"].diff() / dt
+            vy = vy.astype('float')
+
 
             if maxspeed > 0:
                 # remove unsmoothed data points that exceed the maximum speed (these are most likely position errors)
@@ -337,13 +340,13 @@ class tracking_data:
                 # for both teams
                 for team, color in zip(['home', 'away', 'ball'], colors):
                     # get x and y values
-                    x_values = data[self.dimensions[self.x_cols_pattern][''.join([team, '_columns'])]].loc[i]
-                    y_values = data[self.dimensions[self.y_cols_pattern][''.join([team, '_columns'])]].loc[i]
+                    x_values = data[self.dimensions[self.x_cols_pattern][''.join([team, '_columns'])]].loc[i].astype('float')
+                    y_values = data[self.dimensions[self.y_cols_pattern][''.join([team, '_columns'])]].loc[i].astype('float')
                     objs = ax.scatter(x=x_values, y=y_values, s=20, c=color)
                     figobjs.append(objs)
                     if velocities and team != 'ball':
                         vx_columns = ['{}_vx'.format(c[:-2]) for c in list(self.dimensions[self.x_cols_pattern][''.join(
-                            [team, '_columns'])])]  # column header for player x positions
+                            [team, '_columns'])])] # column header for player x positions
                         vy_columns = ['{}_vy'.format(c[:-2]) for c in list(self.dimensions[self.y_cols_pattern][''.join(
                             [team, '_columns'])])]  # column header for player y positions
                         objs = ax.quiver(x_values, y_values, data[vx_columns].loc[i], data[vy_columns].loc[i],

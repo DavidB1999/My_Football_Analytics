@@ -38,11 +38,12 @@ def parse_dfl_pos_data(pos_filepath, mi_filepath, fps=25, print_info=False):
     data['possession'] = []
     data['GameSection'] = []
     data['Time'] = []
+    data['Time [s]'] = []
 
     # dummy dates with time to get time variable
     firsthalf_time = datetime.datetime(100, 1, 1, 0, 0, 0, 0)
     secondhalf_time = datetime.datetime(100, 1, 1, 0, 45, 0, 0)
-
+    time_s = 0
     # using floodlight function to get periods and the associated "N"s i.e frame names (not starting at 0!) from
     # position data
     period_frames, est_framerate = dfl._create_periods_from_dat(pos_filepath)
@@ -65,6 +66,8 @@ def parse_dfl_pos_data(pos_filepath, mi_filepath, fps=25, print_info=False):
                 # add time column always starting at 0 and adding 0.04 seconds per frame (25fps)
                 # starting at 45 minutes if segement is secondHalf
                 ms_per_frame = 1000 / fps
+                data['Time [s]'].append(time_s)
+                time_s = time_s + ms_per_frame/1000
                 if segment == 'firstHalf':
                     data['Time'].append(firsthalf_time.time().strftime('%H:%M:%S.%f'))
                     firsthalf_time = firsthalf_time + datetime.timedelta(milliseconds=ms_per_frame)
@@ -167,6 +170,9 @@ def parse_dfl_pos_data(pos_filepath, mi_filepath, fps=25, print_info=False):
     flat_data = flatdict.FlatDict(data, delimiter='_')
     flat_data.keys()
     df = pd.DataFrame.from_dict(flat_data, orient='index').transpose()
+    period_dict = {'firstHalf': 1,
+                   'secondHalf': 2}
+    df['Period'] = df['GameSection'].map(period_dict)
 
     pitch = dfl.read_pitch_from_mat_info_xml(mi_filepath)
     x_range_data = pitch.xlim
