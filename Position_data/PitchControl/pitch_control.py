@@ -41,6 +41,59 @@ def get_all_players(td_object, frame=None, teams=['Home', 'Away'], params=None):
                 players.append(c_player)
     return players
 
+def check_offside(td_object, frame, attacking_team, verbose=False, tol=0.2):
+
+    # get players
+    attacking_players = get_all_players(td_object=td_object, frame=frame, teams=[attacking_team])
+    defending_team = ['Home', 'Away']
+    defending_team.remove(attacking_team)
+    defending_players = get_all_players(td_object=td_object, frame=frame, teams=defending_team)
+
+    # get ball position
+    ball_x = td_object.data['ball_x'][frame]
+
+    # find jersey number of defending goalkeeper (just to establish attack direction)
+    defending_GK_id = td_object.Home_GK if attacking_team == 'Away' else td_object.Away_GK
+
+    # make sure defending goalkeeper is actually on the field!
+    assert defending_GK_id in [p.id for p in defending_players], "Defending goalkeeper jersey number not found in defending players"
+
+    # get goalkeeper player object
+    defending_GK = [p for p in defending_players if p.id == defending_GK_id][0]
+
+    # use defending goalkeeper x position to figure out which half he is defending
+    # distance to both goal lines!
+    defending_half = td_object.x_range_pitch[0] if abs(defending_GK.position[0] - td_object.x_range_pitch[0]) < abs(defending_GK.position[0] - td_object.x_range_pitch[1]) else td_object.x_range_pitch[1]
+
+    # find the x-position of the second-deepest defeending player (including GK)
+    # reverse depending on attacking direction
+    r = True if defending_half == max(td_object.x_range_pitch) else False
+    second_deepest_defender_x = sorted([p.position[0] for p in defending_players], reverse=r)[1]
+
+    # define offside line as being the maximum/minumum of second_deepest_defender_x, ball position and half-way line
+    # max vs min depends on direction of play so we just use r again!
+    if r:
+        offside_line = max(second_deepest_defender_x, ball_x,
+                           0.5 * max(td_object.x_range_pitch) - min(td_object.x_range_pitch)) + tol
+    else:
+        offside_line = min(second_deepest_defender_x, ball_x,
+                           0.5 * max(td_object.x_range_pitch) - min(td_object.x_range_pitch)) - tol
+
+    # any attacking players with x-position greater/smaller than the offside line are offside
+    if verbose:
+        for p in attacking_players:
+            if r:
+                if p.position[0] > offside_line:
+                    print("player %s in %s team is offside" % (p.id, p.player_name))
+            else:
+                if p.position[0] < offside_line:
+                    print("player %s in %s team is offside" % (p.id, p.player_name))
+    if r:
+        attacking_players = [p for p in attacking_players if p.position[0] <= offside_line]
+    else:
+        attacking_players = [p for p in attacking_players if p.position[0] >= offside_line]
+
+    return attacking_players
 
 def default_model_params(time_to_control_veto=3, mpa=7, mps=5, rt=0.7, tti_s=0.45, kappa_def=1,
                          lambda_att=4.3, kappa_gk=3, abs=15, dt=0.04, mit=10, model_converge_tol=0.01):
@@ -169,17 +222,20 @@ def pitch_control_at_frame(frame, td_object, n_grid_cells_x=50, offside=False, a
 
     # get the players for both teams and sort by attacking and defending (formality)
     if attacking_team == 'Home':
-        attacking_players = get_all_players(td_object=td_object, frame=frame, teams=['Home'], params=params)
+        if offside:
+            attacking_players = check_offside(td_object=td_object, frame=frame, attacking_team='Home')
+        else:
+            attacking_players = get_all_players(td_object=td_object, frame=frame, teams=['Home'], params=params)
         defending_players = get_all_players(td_object=td_object, frame=frame, teams=['Away'], params=params)
     elif attacking_team == 'Away':
         attacking_players = get_all_players(td_object=td_object, frame=frame, teams=['Away'], params=params)
-        defending_players = get_all_players(td_object=td_object, frame=frame, teams=['Home'], params=params)
+        if offside:
+            defending_players = check_offside(td_object=td_object, frame=frame, attacking_team='Away')
+        else:
+            defending_players = get_all_players(td_object=td_object, frame=frame, teams=['Home'], params=params)
     else:
         raise ValueError('team must be either "Home" or "Away"!')
 
-    if offside:
-        # check offside with function to be included later
-        print('Offside check not available yet.')
 
     # calculate pitch pitch control model at each location on the pitch
     for i in range(len(ygrid)):
@@ -258,16 +314,17 @@ def pitch_control_at_target(target_position, attacking_players, defending_player
 
 
 def plot_pitch_control(td_object, frame, attacking_team='Home', PPCF=None, velocities=False, params=None,
-                       n_grid_cells_x=50):
+                       n_grid_cells_x=50, offside=False):
     if PPCF is None:
-        PPCF, xgrid, ygrid = pitch_control_at_frame(frame, td_object, params=params, n_grid_cells_x=n_grid_cells_x)
+        PPCF, xgrid, ygrid = pitch_control_at_frame(frame, td_object, params=params, n_grid_cells_x=n_grid_cells_x,
+                                                    offside=offside, attacking_team=attacking_team)
 
     fig, ax = td_object.plot_players(frame=frame, velocities=velocities)
 
     if attacking_team == 'Home':
         cmap = 'bwr'
     else:
-        cmap = 'brw_r'
+        cmap = 'bwr_r'
     ax.imshow(np.flipud(PPCF), extent=(
         min(td_object.x_range_pitch), max(td_object.x_range_pitch), min(td_object.y_range_pitch),
         max(td_object.y_range_pitch)), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
@@ -277,7 +334,7 @@ def plot_pitch_control(td_object, frame, attacking_team='Home', PPCF=None, veloc
 def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Home', velocities=False, params=None,
                           n_grid_cells_x=50, frames_per_second=25, fname='Animated_Clip', pitch_col='#1c380e',
                           line_col='white', colors=['red', 'blue', 'black'], PlayerAlpha=0.7, fpath=None,
-                          progress_steps = [0.25, 0.5, 0.75]):
+                          progress_steps = [0.25, 0.5, 0.75], offside=False):
     data = td_object.data
     if start_frame == 0:
         data = data.iloc[start_frame: end_frame]
@@ -332,7 +389,8 @@ def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Hom
         for i in index:
             figobjs = []  # this is used to collect up all the axis objects so that they can be deleted after each iteration
             # for both teams
-            PPCF, xgrid, ygrid = pitch_control_at_frame(i, td_object, params=params, n_grid_cells_x=n_grid_cells_x)
+            PPCF, xgrid, ygrid = pitch_control_at_frame(i, td_object, params=params, n_grid_cells_x=n_grid_cells_x,
+                                                        offside=offside, attacking_team=attacking_team)
             pc = ax.imshow(np.flipud(PPCF), extent=(
                 min(td_object.x_range_pitch), max(td_object.x_range_pitch), min(td_object.y_range_pitch),
                 max(td_object.y_range_pitch)), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
