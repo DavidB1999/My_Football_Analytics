@@ -9,6 +9,7 @@ My apologies if I forget to credit someone at any point. :pray: <br>
 I recommend checking out some of the following repositories and creators:
 
 + Edd Websters brilliant overview on football analytics: https://github.com/eddwebster/football_analytics
++ Floodlight: https://github.com/floodlight-sports/floodlight | https://floodlight.readthedocs.io/en/latest/index.html
 + Friends of Tracking: https://github.com/Friends-of-Tracking-Data-FoTD | https://www.youtube.com/@friendsoftracking755
 + McKay Johns: https://www.youtube.com/@McKayJohns | https://github.com/mckayjohns/youtube-videos
 
