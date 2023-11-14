@@ -274,6 +274,7 @@ def pitch_control_at_target(target_position, attacking_players, defending_player
     else:
         # solve pitch control model by integrating equation 3 in Spearman et al.
         # first remove any player that is far (in time) from the target location
+        # include only those players that arrive (time to intercept) earlier than the fastest teammate + the time it would take him to control
         attacking_players = [p for p in attacking_players if
                              p.time_to_intercept - tau_min_att < params['time_to_control_att']]
         defending_players = [p for p in defending_players if
