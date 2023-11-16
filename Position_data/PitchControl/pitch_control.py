@@ -6,10 +6,11 @@ from Pitch.My_Pitch import \
 from mplsoccer import Pitch
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import torch
+from torch.nn.functional import softplus
 
 
 # class player to bundle all steps for each player
-
 def get_player_from_data(td_object, pid, team, data=None, frame=None, params=None):
     if params is None:
         params = default_model_params()
@@ -41,8 +42,8 @@ def get_all_players(td_object, frame=None, teams=['Home', 'Away'], params=None):
                 players.append(c_player)
     return players
 
-def check_offside(td_object, frame, attacking_team, verbose=False, tol=0.2):
 
+def check_offside(td_object, frame, attacking_team, verbose=False, tol=0.2):
     # get players
     attacking_players = get_all_players(td_object=td_object, frame=frame, teams=[attacking_team])
     defending_team = ['Home', 'Away']
@@ -56,14 +57,16 @@ def check_offside(td_object, frame, attacking_team, verbose=False, tol=0.2):
     defending_GK_id = td_object.Home_GK if attacking_team == 'Away' else td_object.Away_GK
 
     # make sure defending goalkeeper is actually on the field!
-    assert defending_GK_id in [p.id for p in defending_players], "Defending goalkeeper jersey number not found in defending players"
+    assert defending_GK_id in [p.id for p in
+                               defending_players], "Defending goalkeeper jersey number not found in defending players"
 
     # get goalkeeper player object
     defending_GK = [p for p in defending_players if p.id == defending_GK_id][0]
 
     # use defending goalkeeper x position to figure out which half he is defending
     # distance to both goal lines!
-    defending_half = td_object.x_range_pitch[0] if abs(defending_GK.position[0] - td_object.x_range_pitch[0]) < abs(defending_GK.position[0] - td_object.x_range_pitch[1]) else td_object.x_range_pitch[1]
+    defending_half = td_object.x_range_pitch[0] if abs(defending_GK.position[0] - td_object.x_range_pitch[0]) < abs(
+        defending_GK.position[0] - td_object.x_range_pitch[1]) else td_object.x_range_pitch[1]
 
     # find the x-position of the second-deepest defeending player (including GK)
     # reverse depending on attacking direction
@@ -94,6 +97,7 @@ def check_offside(td_object, frame, attacking_team, verbose=False, tol=0.2):
         attacking_players = [p for p in attacking_players if p.position[0] >= offside_line]
 
     return attacking_players
+
 
 def default_model_params(time_to_control_veto=3, mpa=7, mps=5, rt=0.7, tti_s=0.45, kappa_def=1,
                          lambda_att=4.3, kappa_gk=3, abs=15, dt=0.04, mit=10, model_converge_tol=0.01):
@@ -153,7 +157,8 @@ class player:
 
     def get_position(self):
         if self.frame is None:
-            position = np.array([self.org_data[self.player_name + '_x'].astype('float'), self.org_data[self.player_name + '_y'].astype('float')])
+            position = np.array([self.org_data[self.player_name + '_x'].astype('float'),
+                                 self.org_data[self.player_name + '_y'].astype('float')])
         else:
             position = np.array([self.org_data[self.player_name + '_x'], self.org_data[self.player_name + '_y']])
         inframe = not np.any(np.isnan(position))
@@ -235,7 +240,6 @@ def pitch_control_at_frame(frame, td_object, n_grid_cells_x=50, offside=False, a
             defending_players = get_all_players(td_object=td_object, frame=frame, teams=['Home'], params=params)
     else:
         raise ValueError('team must be either "Home" or "Away"!')
-
 
     # calculate pitch pitch control model at each location on the pitch
     for i in range(len(ygrid)):
@@ -335,21 +339,19 @@ def plot_pitch_control(td_object, frame, attacking_team='Home', PPCF=None, veloc
 def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Home', velocities=False, params=None,
                           n_grid_cells_x=50, frames_per_second=25, fname='Animated_Clip', pitch_col='#1c380e',
                           line_col='white', colors=['red', 'blue', 'black'], PlayerAlpha=0.7, fpath=None,
-                          progress_steps = [0.25, 0.5, 0.75], offside=False):
+                          progress_steps=[0.25, 0.5, 0.75], offside=False):
     data = td_object.data
     if start_frame == 0:
         data = data.iloc[start_frame: end_frame]
     else:
         data = data.iloc[start_frame - 1: end_frame]
     index = data.index
-    index_range = end_frame-start_frame
+    index_range = end_frame - start_frame
 
     if progress_steps is not None:
         progress_dict = dict()
         for p in progress_steps:
             progress_dict[p] = False
-
-
 
     field_dimen = (max(td_object.dimensions['x']['pitch']), max(td_object.dimensions['y']['pitch']))
 
@@ -378,7 +380,7 @@ def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Hom
         raise ValueError(f'Unfortunately the pitch {td_object.scale_to_pitch} is not yet supported by this function!')
 
     fig.set_tight_layout(True)
-    print("Generating your clip...") # , end=''
+    print("Generating your clip...")  # , end=''
 
     # determine colormap
     if attacking_team == 'Home':
@@ -398,8 +400,10 @@ def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Hom
             figobjs.append(pc)
             for team, color in zip(['home', 'away', 'ball'], colors):
                 # get x and y values
-                x_values = data[td_object.dimensions[td_object.x_cols_pattern][''.join([team, '_columns'])]].loc[i].astype('float')
-                y_values = data[td_object.dimensions[td_object.y_cols_pattern][''.join([team, '_columns'])]].loc[i].astype('float')
+                x_values = data[td_object.dimensions[td_object.x_cols_pattern][''.join([team, '_columns'])]].loc[
+                    i].astype('float')
+                y_values = data[td_object.dimensions[td_object.y_cols_pattern][''.join([team, '_columns'])]].loc[
+                    i].astype('float')
                 objs = ax.scatter(x=x_values, y=y_values, s=20, c=color)
                 figobjs.append(objs)
 
@@ -409,7 +413,7 @@ def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Hom
                                       [team, '_columns'])])]  # column header for player x positions
                     vy_columns = ['{}_vy'.format(c[:-2]) for c in
                                   list(td_object.dimensions[td_object.y_cols_pattern][''.join(
-                                      [team, '_columns'])])] # column header for player y positions
+                                      [team, '_columns'])])]  # column header for player y positions
                     objs = ax.quiver(x_values, y_values, data[vx_columns].loc[i], data[vy_columns].loc[i],
                                      color=color, angles='xy', scale_units='xy', scale=1, width=0.0015,
                                      headlength=5, headwidth=3, alpha=PlayerAlpha)
@@ -417,7 +421,8 @@ def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Hom
             frame_minute = int(data[td_object.time_col][i] / 60.)
             frame_second = (data[td_object.time_col][i] / 60. - frame_minute) * 60.
             timestring = "%d:%1.2f" % (frame_minute, frame_second)
-            objs = ax.text(field_dimen[0]/2 - 0.05*field_dimen[0], td_object.y_range_pitch[1] + 0.05*td_object.y_range_pitch[1],
+            objs = ax.text(field_dimen[0] / 2 - 0.05 * field_dimen[0],
+                           td_object.y_range_pitch[1] + 0.05 * td_object.y_range_pitch[1],
                            timestring, fontsize=14)
             figobjs.append(objs)
             writer.grab_frame()
