@@ -470,10 +470,10 @@ def tensor_pitch_control(td_object, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=-
     Away_vel_array = pos_to_array(vel_Away, nan_to=vel_nan_to)
 
     # reshaping for tensor later
-    Home_array = Home_array[:, remove_first_frames, None, None, :]
-    Away_array = Away_array[:, remove_first_frames, None, None, :]
-    Home_vel_array = Home_vel_array[:, remove_first_frames, None, None, :]
-    Away_vel_array = Away_vel_array[:, remove_first_frames, None, None, :]
+    Home_array = Home_array[:, remove_first_frames:, None, None, :]
+    Away_array = Away_array[:, remove_first_frames:, None, None, :]
+    Home_vel_array = Home_vel_array[:, remove_first_frames:, None, None, :]
+    Away_vel_array = Away_vel_array[:, remove_first_frames:, None, None, :]
     Ball_array = Ball_array[None, remove_first_frames:]
 
     # create grid based on tensors
@@ -502,7 +502,7 @@ def tensor_pitch_control(td_object, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=-
 
         # loop over batches needed to cover all frames
         for b in range(int(n_frames / batch_size)):
-            print(b)
+            print(f'Current batch: {b+1}/{int(n_frames / batch_size)}')
             # convert all arrays to tensors!
             bp = torch.tensor(
                 Ball_array[:, (first_frame + b * batch_size):(np.minimum(first_frame + (b + 1) * batch_size,
@@ -533,16 +533,15 @@ def tensor_pitch_control(td_object, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=-
             r_reaction_away = r_reaction_away - target_position  # after reaction time
 
             # time to intercept for home and away filled
-            print(tti.shape)
-            print(r_reaction_home.shape)
+
             tti[:h_players, :ball_travel_time.shape[1]] = torch.norm(r_reaction_home, dim=4).add_(reaction_time).div_(
                 max_player_speed)
             tti[h_players:, :ball_travel_time.shape[1]] = torch.norm(r_reaction_away, dim=4).add_(reaction_time).div_(
                 max_player_speed)
 
-            tmp2[..., 0] = sigma * (ball_travel_time - tti)
-            tmp1 = sigma * 0.5 * (ti + 1) * 10 + tmp2
-            hh = torch.sigmoid(tmp1[:14]).mul_(lamb)
+            tmp2[..., 0] = exp * (ball_travel_time - tti)
+            tmp1 = exp * 0.5 * (ti + 1) * 10 + tmp2
+            hh = torch.sigmoid(tmp1[:h_players]).mul_(lamb)
             h = hh.sum(0)
 
             S = torch.exp(-lamb * torch.sum(softplus(tmp1) - softplus(tmp2), dim=0).div_(exp))
@@ -553,7 +552,7 @@ def tensor_pitch_control(td_object, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=-
                                                                                                              wi).mul_(
                 5.)
 
-    return pc
+    return pc, S, h, wi
 
 
 
