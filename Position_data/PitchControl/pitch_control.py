@@ -440,3 +440,133 @@ def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Hom
     print("All done!")
     plt.clf()
     plt.close(fig)
+
+
+# function to create pitch control model via tensors as done by anenglishgoat but using my tracking data class
+def tensor_pitch_control(td_object, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=-1000, remove_first_frames=0,
+                         reaction_time=0.7, max_player_speed=5, average_ball_speed=15, sigma=0.45, lamb=4.3,
+                         n_grid_points_x=50, n_grid_points_y=30, device='cpu', dtype=torch.float32,
+                         first_frame=0, last_frame=500, batch_size=250, deg=50, version='GL'):
+    # create the entire exponent of the intercept probability function based on sigma
+    exp = np.pi / np.sqrt(3.) / sigma
+
+    # make sure velocities are computed
+    td_object.get_velocities()
+
+    # access position data
+    Home = td_object.get_team('Home', selection='position', T_P=False)
+    Away = td_object.get_team('Home', selection='position', T_P=False)
+    Ball = td_object.get_ball(pos_only=True)
+
+    # access velocities
+    vel_Home = td_object.get_team('Home', selection='velocity', T_P=False)
+    vel_Away = td_object.get_team('Away', selection='velocity', T_P=False)
+
+    # convert to arrays
+    Ball_array = pos_to_array(Ball, nan_to=np.nan, ball=True)
+    Home_array = pos_to_array(Home, nan_to=pos_nan_to)
+    Away_array = pos_to_array(Away, nan_to=pos_nan_to)
+    Home_vel_array = pos_to_array(vel_Home, nan_to=vel_nan_to)
+    Away_vel_array = pos_to_array(vel_Away, nan_to=vel_nan_to)
+
+    # reshaping for tensor later
+    Home_array = Home_array[:, remove_first_frames, None, None, :]
+    Away_array = Away_array[:, remove_first_frames, None, None, :]
+    Home_vel_array = Home_vel_array[:, remove_first_frames, None, None, :]
+    Away_vel_array = Away_vel_array[:, remove_first_frames, None, None, :]
+    Ball_array = Ball_array[None, remove_first_frames:]
+
+    # create grid based on tensors
+    XX, YY = torch.meshgrid(torch.linspace(0, 105, n_grid_points_x, device=device, dtype=dtype),
+                            torch.linspace(0, 65, n_grid_points_y, device=device, dtype=dtype))
+    target_position = torch.stack([XX, YY], 2)[None, None, :, :, :]  # all possible positions
+
+    # number of frames over which we model pitch control
+    n_frames = last_frame - first_frame
+
+    # get number of players
+    n_players = Home_array.shape[0] + Away_array.shape[0]
+    h_players = Home_array.shape[0]
+    # time to intercept empty torch
+    tti = torch.empty([n_players, batch_size, n_grid_points_x, n_grid_points_y], device=device, dtype=dtype)
+    # n_players*batch_size*grid
+    tmp2 = torch.empty([n_players, batch_size, n_grid_points_x, n_grid_points_y, 1], device=device, dtype=dtype)
+    # n_players*batch_size*grid
+    pc = torch.empty([n_frames, n_grid_points_x, n_grid_points_y], device=device, dtype=dtype)
+    # frames * grid
+
+    if version == 'GL':
+        ti, wi = np.polynomial.legendre.leggauss(deg=deg)  ## used for numerical integration later on
+        ti = torch.tensor(ti, device=device, dtype=dtype)
+        wi = torch.tensor(wi, device=device, dtype=dtype)
+
+        # loop over batches needed to cover all frames
+        for b in range(int(n_frames / batch_size)):
+            print(b)
+            # convert all arrays to tensors!
+            bp = torch.tensor(
+                Ball_array[:, (first_frame + b * batch_size):(np.minimum(first_frame + (b + 1) * batch_size,
+                                                                         int(first_frame + n_frames)))],
+                device=device, dtype=dtype)
+            hp = torch.tensor(
+                Home_array[:, (first_frame + b * batch_size):(np.minimum(first_frame + (b + 1) * batch_size,
+                                                                         int(first_frame + n_frames)))],
+                device=device, dtype=dtype)
+            ap = torch.tensor(
+                Away_array[:, (first_frame + b * batch_size):(np.minimum(first_frame + (b + 1) * batch_size,
+                                                                         int(first_frame + n_frames)))],
+                device=device, dtype=dtype)
+            hv = torch.tensor(
+                Home_vel_array[:, (first_frame + b * batch_size):(np.minimum(first_frame + (b + 1) * batch_size,
+                                                                         int(first_frame + n_frames)))],
+                device=device, dtype=dtype)
+            av = torch.tensor(
+                Away_vel_array[:, (first_frame + b * batch_size):(np.minimum(first_frame + (b + 1) * batch_size,
+                                                                         int(first_frame + n_frames)))],
+                device=device, dtype=dtype)
+
+            ball_travel_time = torch.norm(target_position - bp, dim=4).div_(average_ball_speed)
+
+            r_reaction_home = hp + hv.mul_(reaction_time)  # position after reaction time (vector)
+            r_reaction_away = ap + av.mul_(reaction_time)  # = position + velocity multiplied by reaction time
+            r_reaction_home = r_reaction_home - target_position  # distance to target position (vector)
+            r_reaction_away = r_reaction_away - target_position  # after reaction time
+
+            # time to intercept for home and away filled
+            print(tti.shape)
+            print(r_reaction_home.shape)
+            tti[:h_players, :ball_travel_time.shape[1]] = torch.norm(r_reaction_home, dim=4).add_(reaction_time).div_(
+                max_player_speed)
+            tti[h_players:, :ball_travel_time.shape[1]] = torch.norm(r_reaction_away, dim=4).add_(reaction_time).div_(
+                max_player_speed)
+
+            tmp2[..., 0] = sigma * (ball_travel_time - tti)
+            tmp1 = sigma * 0.5 * (ti + 1) * 10 + tmp2
+            hh = torch.sigmoid(tmp1[:14]).mul_(lamb)
+            h = hh.sum(0)
+
+            S = torch.exp(-lamb * torch.sum(softplus(tmp1) - softplus(tmp2), dim=0).div_(exp))
+
+            # fill pitch control tensor
+            pc[(first_frame + b * batch_size):(
+                np.minimum(first_frame + (b + 1) * batch_size, int(first_frame + n_frames)))] = torch.matmul(S * h,
+                                                                                                             wi).mul_(
+                5.)
+
+    return pc
+
+
+
+
+# convert data frame to array (usually for position data in pitch control model
+def pos_to_array(pos_data, nan_to, ball=False):
+    if 'Period' in pos_data.columns or 'Time [s]' in pos_data.columns:
+        raise ValueError('Data should include positon data only. Not any other columns!')
+    n_players = int(len(pos_data.columns) / 2)
+    if ball:
+        array = np.asarray(pos_data.iloc[:, range(0, 2)])[:, None, None, :]
+    else:
+        array = np.array([np.asarray(pos_data.iloc[:, range(j * 2, j * 2 + 2)]) for j in range(n_players)])
+
+    np.nan_to_num(array, copy=False, nan=nan_to)
+    return array
