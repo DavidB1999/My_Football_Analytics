@@ -466,8 +466,8 @@ def tensor_pitch_control(td_object, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0
     Ball_array = pos_to_array(Ball, nan_to=np.nan, ball=True)
     Home_array = pos_to_array(Home, nan_to=pos_nan_to)
     Away_array = pos_to_array(Away, nan_to=pos_nan_to)
-    Home_vel_array = pos_to_array(vel_Home, nan_to=vel_nan_to)
-    Away_vel_array = pos_to_array(vel_Away, nan_to=vel_nan_to)
+    Home_vel_array = pos_to_array(vel_Home, nan_to=vel_nan_to) + jitter
+    Away_vel_array = pos_to_array(vel_Away, nan_to=vel_nan_to) + jitter
 
     # reshaping for tensor later
     Home_array = Home_array[:, remove_first_frames:, None, None, :]
@@ -477,8 +477,10 @@ def tensor_pitch_control(td_object, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0
     Ball_array = Ball_array[None, remove_first_frames:]
 
     # create grid based on tensors
-    XX, YY = torch.meshgrid(torch.linspace(0, 105, n_grid_points_x, device=device, dtype=dtype),
-                            torch.linspace(0, 65, n_grid_points_y, device=device, dtype=dtype))
+    XX, YY = torch.meshgrid(torch.linspace(td_object.x_range_pitch[0], td_object.x_range_pitch[1], n_grid_points_x,
+                                           device=device, dtype=dtype),
+                            torch.linspace(td_object.y_range_pitch[0], td_object.y_range_pitch[1], n_grid_points_y,
+                                           device=device, dtype=dtype))
     target_position = torch.stack([XX, YY], 2)[None, None, :, :, :]  # all possible positions
 
     # number of frames over which we model pitch control
@@ -502,7 +504,7 @@ def tensor_pitch_control(td_object, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0
 
         # loop over batches needed to cover all frames
         for b in range(int(n_frames / batch_size)):
-            print(f'Current batch: {b+1}/{int(n_frames / batch_size)}')
+            print(f'Current batch: {b + 1}/{int(n_frames / batch_size)}')
             # convert all arrays to tensors!
             bp = torch.tensor(
                 Ball_array[:, (first_frame + b * batch_size):(np.minimum(first_frame + (b + 1) * batch_size,
@@ -518,11 +520,11 @@ def tensor_pitch_control(td_object, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0
                 device=device, dtype=dtype)
             hv = torch.tensor(
                 Home_vel_array[:, (first_frame + b * batch_size):(np.minimum(first_frame + (b + 1) * batch_size,
-                                                                         int(first_frame + n_frames)))],
+                                                                             int(first_frame + n_frames)))],
                 device=device, dtype=dtype)
             av = torch.tensor(
                 Away_vel_array[:, (first_frame + b * batch_size):(np.minimum(first_frame + (b + 1) * batch_size,
-                                                                         int(first_frame + n_frames)))],
+                                                                             int(first_frame + n_frames)))],
                 device=device, dtype=dtype)
 
             ball_travel_time = torch.norm(target_position - bp, dim=4).div_(average_ball_speed)
@@ -552,8 +554,42 @@ def tensor_pitch_control(td_object, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0
                                                                                                              wi).mul_(
                 5.)
 
-    return pc, S, h, wi
+    return pc
 
+
+def plot_tensor_pitch_control(td_object, frame, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0, remove_first_frames=0,
+                              reaction_time=0.7, max_player_speed=5, average_ball_speed=15, sigma=0.45, lamb=4.3,
+                              n_grid_points_x=50, n_grid_points_y=30, device='cpu', dtype=torch.float32,
+                              first_frame=0, last_frame=500, batch_size=250, deg=50, version='GL', cmap='bwr',
+                              velocities=True):
+
+
+    pitch_control = tensor_pitch_control(td_object=td_object, jitter=jitter, pos_nan_to=pos_nan_to,
+                                         vel_nan_to=vel_nan_to, remove_first_frames=remove_first_frames,
+                                         reaction_time=reaction_time, max_player_speed=max_player_speed,
+                                         average_ball_speed=average_ball_speed, sigma=sigma, lamb=lamb,
+                                         n_grid_points_x=n_grid_points_x, n_grid_points_y=n_grid_points_y,
+                                         device=device,
+                                         dtype=dtype, first_frame=first_frame, last_frame=last_frame,
+                                         batch_size=batch_size, deg=50, version=version)
+
+    frame_number = frame - first_frame
+    # plot players
+    fig, ax = td_object.plot_players(frame=frame_number, velocities=velocities)
+
+    # ensure correct orientation
+    mx_pitch = max(td_object.y_range_pitch)
+    mx_data = max(td_object.y_range_data)
+    if td_object.y_range_pitch.index(mx_pitch) == td_object.y_range_data.index(mx_data):
+        ax.imshow(np.flipud(pitch_control[frame_number].rot90()), extent=(
+            td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[1],
+            td_object.y_range_pitch[0]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
+    else:
+        ax.imshow(np.flipud(pitch_control[frame_number].rot90()), extent=(
+            td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[1],
+            td_object.y_range_pitch[0]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
+
+    return fig
 
 
 
