@@ -443,7 +443,7 @@ def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Hom
 
 
 # function to create pitch control model via tensors as done by anenglishgoat but using my tracking data class
-def tensor_pitch_control(td_object, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=-1000, remove_first_frames=0,
+def tensor_pitch_control(td_object, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0, remove_first_frames=0,
                          reaction_time=0.7, max_player_speed=5, average_ball_speed=15, sigma=0.45, lamb=4.3,
                          n_grid_points_x=50, n_grid_points_y=30, device='cpu', dtype=torch.float32,
                          first_frame=0, last_frame=500, batch_size=250, deg=50, version='GL'):
@@ -455,7 +455,7 @@ def tensor_pitch_control(td_object, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=-
 
     # access position data
     Home = td_object.get_team('Home', selection='position', T_P=False)
-    Away = td_object.get_team('Home', selection='position', T_P=False)
+    Away = td_object.get_team('Away', selection='position', T_P=False)
     Ball = td_object.get_ball(pos_only=True)
 
     # access velocities
