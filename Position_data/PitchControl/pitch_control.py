@@ -563,7 +563,6 @@ def plot_tensor_pitch_control(td_object, frame, jitter=1e-12, pos_nan_to=-1000, 
                               first_frame=0, last_frame=500, batch_size=250, deg=50, version='GL', cmap='bwr',
                               velocities=True):
 
-
     pitch_control = tensor_pitch_control(td_object=td_object, jitter=jitter, pos_nan_to=pos_nan_to,
                                          vel_nan_to=vel_nan_to, remove_first_frames=remove_first_frames,
                                          reaction_time=reaction_time, max_player_speed=max_player_speed,
@@ -590,7 +589,6 @@ def plot_tensor_pitch_control(td_object, frame, jitter=1e-12, pos_nan_to=-1000, 
             td_object.y_range_pitch[0]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
 
     return fig
-
 
 
 # convert data frame to array (usually for position data in pitch control model
