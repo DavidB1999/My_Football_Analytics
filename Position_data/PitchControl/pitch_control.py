@@ -446,7 +446,8 @@ def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Hom
 def tensor_pitch_control(td_object, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0, remove_first_frames=0,
                          reaction_time=0.7, max_player_speed=5, average_ball_speed=15, sigma=0.45, lamb=4.3,
                          n_grid_points_x=50, n_grid_points_y=30, device='cpu', dtype=torch.float32,
-                         first_frame=0, last_frame=500, batch_size=250, deg=50, version='GL'):
+                         first_frame=0, last_frame=500, batch_size=250, deg=50, version='GL', max_int=500,
+                         fps=25):
     # create the entire exponent of the intercept probability function based on sigma
     exp = np.pi / np.sqrt(3.) / sigma
 
@@ -498,6 +499,8 @@ def tensor_pitch_control(td_object, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0
     # frames * grid
 
     if version == 'GL':
+        print("Running Spearman's pitch control computation based on Gauss legendre quadration")
+
         ti, wi = np.polynomial.legendre.leggauss(deg=deg)  ## used for numerical integration later on
         ti = torch.tensor(ti, device=device, dtype=dtype)
         wi = torch.tensor(wi, device=device, dtype=dtype)
@@ -554,6 +557,60 @@ def tensor_pitch_control(td_object, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0
                                                                                                              wi).mul_(
                 5.)
 
+    elif version == 'int':
+        print("Running pitch control computation based on Spearman's integration method")
+        relu = torch.nn.ReLU()
+        dt = 1/td_object.fps
+        # loop over batches needed to cover all frames
+        for b in range(int(n_frames / batch_size)):
+            print(f'Current batch: {b + 1}/{int(n_frames / batch_size)}')
+            # convert all arrays to tensors!
+            bp = torch.tensor(
+                Ball_array[:, (first_frame + b * batch_size):(np.minimum(first_frame + (b + 1) * batch_size,
+                                                                         int(first_frame + n_frames)))],
+                device=device, dtype=dtype)
+            hp = torch.tensor(
+                Home_array[:, (first_frame + b * batch_size):(np.minimum(first_frame + (b + 1) * batch_size,
+                                                                         int(first_frame + n_frames)))],
+                device=device, dtype=dtype)
+            ap = torch.tensor(
+                Away_array[:, (first_frame + b * batch_size):(np.minimum(first_frame + (b + 1) * batch_size,
+                                                                         int(first_frame + n_frames)))],
+                device=device, dtype=dtype)
+            hv = torch.tensor(
+                Home_vel_array[:, (first_frame + b * batch_size):(np.minimum(first_frame + (b + 1) * batch_size,
+                                                                             int(first_frame + n_frames)))],
+                device=device, dtype=dtype)
+            av = torch.tensor(
+                Away_vel_array[:, (first_frame + b * batch_size):(np.minimum(first_frame + (b + 1) * batch_size,
+                                                                             int(first_frame + n_frames)))],
+                device=device, dtype=dtype)
+
+            ball_travel_time = torch.norm(target_position - bp, dim=4).div_(average_ball_speed)
+
+            r_reaction_home = hp + hv.mul_(reaction_time)  # position after reaction time (vector)
+            r_reaction_away = ap + av.mul_(reaction_time)  # = position + velocity multiplied by reaction time
+            r_reaction_home = r_reaction_home - target_position  # distance to target position (vector)
+            r_reaction_away = r_reaction_away - target_position  # after reaction time
+
+            # time to intercept for home and away filled
+
+            tti[:h_players, :ball_travel_time.shape[1]] = torch.norm(r_reaction_home, dim=4).add_(reaction_time).div_(
+                max_player_speed)
+            tti[h_players:, :ball_travel_time.shape[1]] = torch.norm(r_reaction_away, dim=4).add_(reaction_time).div_(
+                max_player_speed)
+
+            y = torch.zeros([n_players, bp.shape[1], n_grid_points_x, n_grid_points_y], device=device, dtype=dtype)
+            for tt in range(max_int):
+                sumy = torch.sum(y, dim=0)  # control over all players
+                if torch.min(sumy) > 0.99:  # convergence
+                    break
+                # added relu to tackle infinite negative due to infinite large sumy!
+                y += dt * lamb * relu(1. - sumy) * 1. / (1. + torch.exp(-exp * (dt*tt + ball_travel_time - tti)))
+
+            pc[(first_frame + b * batch_size):(
+                np.minimum(first_frame + (b + 1) * batch_size, int(first_frame + n_frames)))] = y[:h_players].sum(0)
+
     return pc
 
 
@@ -563,15 +620,14 @@ def plot_tensor_pitch_control(td_object, frame, jitter=1e-12, pos_nan_to=-1000, 
                               first_frame=0, last_frame=500, batch_size=250, deg=50, version='GL', cmap='bwr',
                               velocities=True):
 
-    pitch_control = tensor_pitch_control(td_object=td_object, jitter=jitter, pos_nan_to=pos_nan_to,
+    pitch_control= tensor_pitch_control(td_object=td_object, jitter=jitter, pos_nan_to=pos_nan_to,
                                          vel_nan_to=vel_nan_to, remove_first_frames=remove_first_frames,
                                          reaction_time=reaction_time, max_player_speed=max_player_speed,
                                          average_ball_speed=average_ball_speed, sigma=sigma, lamb=lamb,
                                          n_grid_points_x=n_grid_points_x, n_grid_points_y=n_grid_points_y,
                                          device=device,
                                          dtype=dtype, first_frame=first_frame, last_frame=last_frame,
-                                         batch_size=batch_size, deg=50, version=version)
-
+                                         batch_size=batch_size, deg=deg, version=version)
     frame_number = frame - first_frame
     # plot players
     fig, ax = td_object.plot_players(frame=frame_number, velocities=velocities)

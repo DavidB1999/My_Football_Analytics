@@ -323,7 +323,7 @@ Function to plot players and pitch control a pitch. Uses the *plot_players* from
 + *first_frame*, *last_frame (int)* - frame interval over which the pitch control is supposed to be modelled
 + *batch_size (int)* - batch size used for tensors and computational process; instead of looping over frames we loop over batches containing batch_size number of frames
 + *deg (int)* - Number of sample points and weights for numpy.polynomial.legendre.leggauss (https://numpy.org/doc/stable/reference/generated/numpy.polynomial.legendre.leggauss.html)
-+ *version (str)* - Computation version. So far only the Gauss-Legendre quadrature ('GL') version is included. An classical integration version should follow.
++ *version (str)* - Computation version. Allows for both the Gauss-Legendre quadrature ('GL') version and an classical integration version ('int').
 + *cmap (str)* - color map used for the pitch control visualization
 + *velocities (boolean)* - Whether velocities are supposed to be displayed
 

@@ -19,6 +19,7 @@ around tracking data. <br>
 + *home* and *away* - optional names for both teams
 + *period_col* - column indicating the period of play / half
 + *time_col* - column with the time
++ *fps* - frame rate / frames per second of the data
 
 
 ### rescale_tracking_data

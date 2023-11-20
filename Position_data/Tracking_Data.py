@@ -13,7 +13,7 @@ class tracking_data:
                  x_range_pitch=None, y_range_pitch=None, mirror_away=None,
                  x_cols_pattern=None, y_cols_pattern=None, scale_to_pitch='mplsoccer',
                  mirror_second_half=None, home=None, away=None, period_col=None,
-                 time_col=None):
+                 time_col=None, fps=None):
 
         self.supported_data_sources = ['metrica', 'dfl']
 
@@ -35,6 +35,7 @@ class tracking_data:
         self.mirror_second_half = mirror_second_half
         self.period_column = period_col
         self.time_col = time_col
+        self.fps = fps
 
         # if nothing else is specified, we assume the standard values of metrica if metrica is specified
         if self.data_source == 'metrica':
@@ -58,6 +59,9 @@ class tracking_data:
             if self.time_col is None:
                 self.time_col = 'Time [s]'
 
+            if self.fps is None:
+                self.fps = 25
+
         elif self.data_source == 'dfl':
             # standard coordinates of dfl tracking data
             if self.x_range_data is None:
@@ -78,6 +82,8 @@ class tracking_data:
                 self.period_column = 'Period'
             if self.time_col is None:
                 self.time_col = 'Time [s]'
+
+
         else:
             raise ValueError(f'You entered {self.data_source}. '
                              f'Unfortunately only {self.supported_data_sources} is/are supported at this stage.')
