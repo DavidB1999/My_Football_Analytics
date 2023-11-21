@@ -666,14 +666,13 @@ def animate_tensor_pitch_control(td_object, pitch_control=None, jitter=1e-12, po
                                  remove_first_frames=0, reaction_time=0.7, max_player_speed=5, average_ball_speed=15,
                                  sigma=0.45, lamb=4.3, n_grid_points_x=50, n_grid_points_y=30, device='cpu',
                                  dtype=torch.float32, first_frame_calc=0, last_frame_calc=500, batch_size=250, deg=50,
-                                 version='GL',
-                                 cmap='bwr', velocities=True, flip_y=True,
+                                 version='GL', cmap='bwr', velocities=True, flip_y=True,
                                  progress_steps=[0.25, 0.5, 0.75], frames_per_second=None, fpath=None,
-                                 fname='Animation',
-                                 pitch_col='#1c380e', line_col='white', colors=['red', 'blue', 'black'],
-                                 PlayerAlpha=0.7,
-                                 first_frame_ani=0, last_frame_ani=100
-                                 ):
+                                 fname='Animation', pitch_col='#1c380e', line_col='white',
+                                 colors=['red', 'blue', 'black'], PlayerAlpha=0.7, first_frame_ani=0,
+                                 last_frame_ani=100):
+
+
     if frames_per_second is None:
         frames_per_second = td_object.fps
 
