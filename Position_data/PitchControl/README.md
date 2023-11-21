@@ -1,7 +1,7 @@
 # Pitch control
 
 This is supposed to be a deep dive into pitch control and related concepts. - long term project <br>
-At this stage only a version Spearman's pitch control model is implemented within this project. <br>
+At this stage only Spearman's pitch control model is implemented within this project. <br>
 
 There are many ways to implement pitch control / space control. Some of the most prominent are:
 
@@ -20,10 +20,11 @@ https://github.com/Friends-of-Tracking-Data-FoTD/LaurieOnTracking<br>
 # pitch_control.py
 
 This scripts contains all necessary steps and functions to model pitch control on the basis of an object of my tracking data class. 
-The code is based entirely on Laurie Shaw's code and videos and was adapted to work my tracking data functionality. 
+The code is based in large part on Laurie Shaw's code and videos and was adapted to work my tracking data functionality. 
 All adaptations were implemented for that purpose only and did not change anything of the underlying mechanism (unless I made a mistake :worried:)!<br>
 An alternative way to implement Spearman's pitch control based on the code from "anenglishgoat" uses tensors (pytorch)
-and offers the option to use "gpu"-support (if available) to speed up the computation process. <br>
+and offers the option to use "gpu"-support (if available) to speed up the computation process. Functions used to implement
+said approach can be recognized by "tensor" in the functions' names. <br>
  
 ### get_player_from_data
                         (td_object, pid, team, data=None, frame=None, params=None)
