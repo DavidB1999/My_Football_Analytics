@@ -335,7 +335,8 @@ Function to plot players and pitch control a pitch. Uses the *plot_players* from
 + *flip_y (boolean)* - Indicates whether the pitch control grid needs to be flipped on y-axis. 
 + *max_int (int)* - maximal interval length for integration method
 + *team (str)* - "Team-perspective" for pitch control modeling - Either "Home" or "Away"
-+ 
+
+
 **Returns**
 
 + *fig (figure)* - player positions and pitch control displayed on a pitch
