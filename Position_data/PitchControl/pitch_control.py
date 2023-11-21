@@ -337,9 +337,11 @@ def plot_pitch_control(td_object, frame, attacking_team='Home', PPCF=None, veloc
 
 
 def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Home', velocities=False, params=None,
-                          n_grid_cells_x=50, frames_per_second=25, fname='Animated_Clip', pitch_col='#1c380e',
+                          n_grid_cells_x=50, frames_per_second=None, fname='Animated_Clip', pitch_col='#1c380e',
                           line_col='white', colors=['red', 'blue', 'black'], PlayerAlpha=0.7, fpath=None,
                           progress_steps=[0.25, 0.5, 0.75], offside=False):
+    if frames_per_second is None:
+        frames_per_second = td_object.fps
     data = td_object.data
     if start_frame == 0:
         data = data.iloc[start_frame: end_frame]
@@ -549,10 +551,9 @@ def tensor_pitch_control(td_object, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0
             h = hh.sum(0)
 
             S = torch.exp(-lamb * torch.sum(softplus(tmp1) - softplus(tmp2), dim=0).div_(exp))
-
             # fill pitch control tensor
-            pc[(first_frame + b * batch_size):(
-                np.minimum(first_frame + (b + 1) * batch_size, int(first_frame + n_frames)))] = torch.matmul(S * h,
+            pc[(0 + b * batch_size):(
+                np.minimum(0 + (b + 1) * batch_size, int(0 + n_frames)))] = torch.matmul(S * h,
                                                                                                              wi).mul_(
                 5.)
 
@@ -618,7 +619,6 @@ def plot_tensor_pitch_control(td_object, frame, pitch_control=None, jitter=1e-12
                               sigma=0.45, lamb=4.3, n_grid_points_x=50, n_grid_points_y=30, device='cpu',
                               dtype=torch.float32, first_frame=0, last_frame=500, batch_size=250, deg=50, version='GL',
                               cmap='bwr', velocities=True, flip_y=True):
-
     if pitch_control is None:
         pitch_control = tensor_pitch_control(td_object=td_object, jitter=jitter, pos_nan_to=pos_nan_to,
                                              vel_nan_to=vel_nan_to, remove_first_frames=remove_first_frames,
@@ -660,3 +660,128 @@ def pos_to_array(pos_data, nan_to, ball=False):
 
     np.nan_to_num(array, copy=False, nan=nan_to)
     return array
+
+
+def animate_tensor_pitch_control(td_object, pitch_control=None, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0,
+                                 remove_first_frames=0, reaction_time=0.7, max_player_speed=5, average_ball_speed=15,
+                                 sigma=0.45, lamb=4.3, n_grid_points_x=50, n_grid_points_y=30, device='cpu',
+                                 dtype=torch.float32, first_frame_calc=0, last_frame_calc=500, batch_size=250, deg=50,
+                                 version='GL',
+                                 cmap='bwr', velocities=True, flip_y=True,
+                                 progress_steps=[0.25, 0.5, 0.75], frames_per_second=None, fpath=None,
+                                 fname='Animation',
+                                 pitch_col='#1c380e', line_col='white', colors=['red', 'blue', 'black'],
+                                 PlayerAlpha=0.7,
+                                 first_frame_ani=0, last_frame_ani=100
+                                 ):
+    if frames_per_second is None:
+        frames_per_second = td_object.fps
+
+    # get position data
+    field_dimen = (max(td_object.dimensions['x']['pitch']), max(td_object.dimensions['y']['pitch']))
+    data = td_object.data
+    if first_frame_ani == 0:
+        data = data.iloc[first_frame_ani: last_frame_ani]
+    else:
+        data = data.iloc[first_frame_ani - 1: last_frame_ani]
+    index = data.index
+    index_range = last_frame_ani - first_frame_ani
+
+    # get pitch control for entire frame!?
+    if pitch_control is None:
+        pitch_control = tensor_pitch_control(td_object=td_object, jitter=jitter, pos_nan_to=pos_nan_to,
+                                             vel_nan_to=vel_nan_to, remove_first_frames=remove_first_frames,
+                                             reaction_time=reaction_time, max_player_speed=max_player_speed,
+                                             average_ball_speed=average_ball_speed, sigma=sigma, lamb=lamb,
+                                             n_grid_points_x=n_grid_points_x, n_grid_points_y=n_grid_points_y,
+                                             device=device,
+                                             dtype=dtype, first_frame=first_frame_calc, last_frame=last_frame_calc,
+                                             batch_size=batch_size, deg=deg, version=version)
+
+    if progress_steps is not None:
+        progress_dict = dict()
+        for p in progress_steps:
+            progress_dict[p] = False
+
+    # define path
+    if fpath is not None:
+        fname = fpath + '/' + fname + '.mp4'  # path and filename
+    else:
+        fname = fname + '.mp4'
+
+    # set up writer
+    FFMpegWriter = animation.writers['ffmpeg']
+    metadata = dict(title='Pitch Control animation', artist='Matplotlib',
+                    comment=f'{td_object.data_source} based pitch control clip')
+    writer = FFMpegWriter(fps=frames_per_second, metadata=metadata)
+
+    # create pitch
+    if td_object.scale_to_pitch == 'mplsoccer':
+        pitch = Pitch(pitch_color=pitch_col, line_color=line_col)
+        fig, ax = plt.subplots()
+        fig.set_facecolor(pitch_col)
+        pitch.draw(ax=ax)
+    elif td_object.scale_to_pitch == 'myPitch':
+        pitch = myPitch(grasscol=pitch_col)
+        fig, ax = plt.subplots()  # figsize=(13.5, 8)
+        fig.set_facecolor(pitch_col)
+        pitch.plot_pitch(ax=ax)
+    else:
+        raise ValueError(f'Unfortunately the pitch {td_object.scale_to_pitch} is not yet supported by this function!')
+
+    fig.set_tight_layout(True)
+    print("Generating your clip...")  # , end=''
+
+    with writer.saving(fig, fname, 100):
+        for i in index:
+            figobjs = []  # this is used to collect up all the axis objects so that they can be deleted after each iteration
+            if flip_y:
+                PC = ax.imshow(np.flipud(pitch_control[i-1-first_frame_ani].rot90()), extent=(
+                    td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[1],
+                    td_object.y_range_pitch[0]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
+            else:
+                PC = ax.imshow(np.flipud(pitch_control[i-1-first_frame_ani].rot90()), extent=(
+                    td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[0],
+                    td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
+            figobjs.append(PC)
+            for team, color in zip(['home', 'away', 'ball'], colors):
+                # get x and y values
+                x_values = data[td_object.dimensions[td_object.x_cols_pattern][''.join([team, '_columns'])]].loc[
+                    i].astype('float')
+                y_values = data[td_object.dimensions[td_object.y_cols_pattern][''.join([team, '_columns'])]].loc[
+                    i].astype('float')
+                objs = ax.scatter(x=x_values, y=y_values, s=20, c=color)
+                figobjs.append(objs)
+                if velocities and team != 'ball':
+                    vx_columns = ['{}_vx'.format(c[:-2]) for c in
+                                  list(td_object.dimensions[td_object.x_cols_pattern][''.join(
+                                      [team, '_columns'])])]  # column header for player x positions
+                    vy_columns = ['{}_vy'.format(c[:-2]) for c in
+                                  list(td_object.dimensions[td_object.y_cols_pattern][''.join(
+                                      [team, '_columns'])])]  # column header for player y positions
+                    objs = ax.quiver(x_values, y_values, data[vx_columns].loc[i], data[vy_columns].loc[i],
+                                     color=color, angles='xy', scale_units='xy', scale=1, width=0.0015,
+                                     headlength=5, headwidth=3, alpha=PlayerAlpha)
+                    figobjs.append(objs)
+
+            frame_minute = int(data[td_object.time_col][i] / 60.)
+            frame_second = (data[td_object.time_col][i] / 60. - frame_minute) * 60.
+            timestring = "%d:%1.2f" % (frame_minute, frame_second)
+            objs = ax.text(field_dimen[0] / 2 - 0.05 * field_dimen[0],
+                           td_object.y_range_pitch[1] + 0.05 * td_object.y_range_pitch[1],
+                           timestring, fontsize=14)
+            figobjs.append(objs)
+            writer.grab_frame()
+            # Delete all axis objects (other than pitch lines) in preparation for next frame
+            for figobj in figobjs:
+                figobj.remove()
+
+            if progress_steps is not None:
+                for key in progress_dict.keys():
+                    if (i - first_frame_ani) / index_range >= key and not progress_dict[key]:
+                        print(f'{key * 100}% done!')
+                        progress_dict[key] = True
+                        break
+    print("All done!")
+    plt.clf()
+    plt.close(fig)
