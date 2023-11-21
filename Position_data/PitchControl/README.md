@@ -265,7 +265,9 @@ This can take quite a while so a small number of frames and the use of *progress
                         (td_object, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0, remove_first_frames=0,
                         reaction_time=0.7, =5, average_ball_speed=15, sigma=0.45, lamb=4.3,
                         n_grid_points_x=50, n_grid_points_y=30, device='cpu', dtype=torch.float32,
-                        first_frame=0, last_frame=500, batch_size=250, deg=50, version='GL')
+                        first_frame=0, last_frame=500, batch_size=250, deg=50, version='GL', max_int=500,
+                        team='Home')
+
 
 Function calculate the pitch control of the home team in a given range of frames. Function relies on tracking_data class
 object from my tracking data package. Function is based on the code by "anenglishgoat".
@@ -289,6 +291,8 @@ object from my tracking data package. Function is based on the code by "anenglis
 + *batch_size (int)* - batch size used for tensors and computational process; instead of looping over frames we loop over batches containing batch_size number of frames
 + *deg (int)* - Number of sample points and weights for numpy.polynomial.legendre.leggauss (https://numpy.org/doc/stable/reference/generated/numpy.polynomial.legendre.leggauss.html)
 + *version (str)* - Computation version. So far only the Gauss-Legendre quadrature ('GL') version is included. An classical integration version should follow.
++ *max_int (int)* - maximal interval length for integration method
++ *team (str)* - "Team-perspective" for pitch control modeling - Either "Home" or "Away"
 
 **Returns**
 
@@ -300,7 +304,7 @@ object from my tracking data package. Function is based on the code by "anenglis
                             remove_first_frames=0, reaction_time=0.7, max_player_speed=5, average_ball_speed=15,
                             sigma=0.45, lamb=4.3, n_grid_points_x=50, n_grid_points_y=30, device='cpu',
                             dtype=torch.float32, first_frame=0, last_frame=500, batch_size=250, deg=50, version='GL',
-                            cmap='bwr', velocities=True)
+                            cmap='bwr', velocities=True, max_int=500, team='Home')
 
 Function to plot players and pitch control a pitch. Uses the *plot_players* from the tracking data class and the 
 *tensor_pitch_control* function. 
@@ -329,7 +333,9 @@ Function to plot players and pitch control a pitch. Uses the *plot_players* from
 + *cmap (str)* - color map used for the pitch control visualization
 + *velocities (boolean)* - Whether velocities are supposed to be displayed
 + *flip_y (boolean)* - Indicates whether the pitch control grid needs to be flipped on y-axis. 
-
++ *max_int (int)* - maximal interval length for integration method
++ *team (str)* - "Team-perspective" for pitch control modeling - Either "Home" or "Away"
++ 
 **Returns**
 
 + *fig (figure)* - player positions and pitch control displayed on a pitch
@@ -355,11 +361,11 @@ Function to convert data frame to array as required in tensor_pitch_control.
                                  remove_first_frames=0, reaction_time=0.7, max_player_speed=5, average_ball_speed=15,
                                  sigma=0.45, lamb=4.3, n_grid_points_x=50, n_grid_points_y=30, device='cpu',
                                  dtype=torch.float32, first_frame_calc=0, last_frame_calc=500, batch_size=250, deg=50,
-                                 version='GL', cmap='bwr', velocities=True, flip_y=True,
+                                 version='GL', cmap='bwr', velocities=True, flip_y=True, 
                                  progress_steps=[0.25, 0.5, 0.75], frames_per_second=None, fpath=None,
                                  fname='Animation', pitch_col='#1c380e', line_col='white',
                                  colors=['red', 'blue', 'black'], PlayerAlpha=0.7, first_frame_ani=0,
-                                 last_frame_ani=100)
+                                 last_frame_ani=100, max_int=500, team='Home')
 
 Function to create an animation of player and ball position and pitch control over a given range of frames.
 
@@ -395,7 +401,8 @@ Function to create an animation of player and ball position and pitch control ov
 + *colors (list, color)* - list of colors for home team, away team and the ball (in that order)
 + *PlayerAlpha (float)* - Opacity/alpha of velocity quiver
 + *first_frame_ani*, *last_frame_ani (int)* - frame interval to be animated(interval should be within calculation interval!)
-
++ *max_int (int)* - maximal interval length for integration method
++ *team (str)* - "Team-perspective" for pitch control modeling - Either "Home" or "Away"
 
 
 

@@ -629,7 +629,7 @@ def plot_tensor_pitch_control(td_object, frame, pitch_control=None, jitter=1e-12
                               remove_first_frames=0, reaction_time=0.7, max_player_speed=5, average_ball_speed=15,
                               sigma=0.45, lamb=4.3, n_grid_points_x=50, n_grid_points_y=30, device='cpu',
                               dtype=torch.float32, first_frame=0, last_frame=500, batch_size=250, deg=50, version='GL',
-                              cmap=None, velocities=True, flip_y=True, team='Home'):
+                              max_int=500, cmap=None, velocities=True, flip_y=True, team='Home'):
     if pitch_control is None:
         pitch_control = tensor_pitch_control(td_object=td_object, jitter=jitter, pos_nan_to=pos_nan_to,
                                              vel_nan_to=vel_nan_to, remove_first_frames=remove_first_frames,
@@ -638,7 +638,7 @@ def plot_tensor_pitch_control(td_object, frame, pitch_control=None, jitter=1e-12
                                              n_grid_points_x=n_grid_points_x, n_grid_points_y=n_grid_points_y,
                                              device=device,
                                              dtype=dtype, first_frame=first_frame, last_frame=last_frame,
-                                             batch_size=batch_size, deg=deg, version=version)
+                                             batch_size=batch_size, deg=deg, version=version, max_int=max_int)
 
     # determine colormap
     if cmap is None:
@@ -686,7 +686,7 @@ def animate_tensor_pitch_control(td_object, pitch_control=None, jitter=1e-12, po
                                  remove_first_frames=0, reaction_time=0.7, max_player_speed=5, average_ball_speed=15,
                                  sigma=0.45, lamb=4.3, n_grid_points_x=50, n_grid_points_y=30, device='cpu',
                                  dtype=torch.float32, first_frame_calc=0, last_frame_calc=500, batch_size=250, deg=50,
-                                 version='GL', cmap=None, velocities=True, flip_y=True, team='Home',
+                                 version='GL', max_int=500, cmap=None, velocities=True, flip_y=True, team='Home',
                                  progress_steps=[0.25, 0.5, 0.75], frames_per_second=None, fpath=None,
                                  fname='Animation', pitch_col='#1c380e', line_col='white',
                                  colors=['red', 'blue', 'black'], PlayerAlpha=0.7, first_frame_ani=0,
@@ -722,7 +722,7 @@ def animate_tensor_pitch_control(td_object, pitch_control=None, jitter=1e-12, po
                                              n_grid_points_x=n_grid_points_x, n_grid_points_y=n_grid_points_y,
                                              device=device,
                                              dtype=dtype, first_frame=first_frame_calc, last_frame=last_frame_calc,
-                                             batch_size=batch_size, deg=deg, version=version)
+                                             batch_size=batch_size, deg=deg, version=version, max_int=max_int)
 
     if progress_steps is not None:
         progress_dict = dict()
