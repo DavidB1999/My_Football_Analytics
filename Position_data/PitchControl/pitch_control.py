@@ -388,7 +388,7 @@ def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Hom
     if attacking_team == 'Home':
         cmap = 'bwr'
     else:
-        cmap = 'brw_r'
+        cmap = 'bwr_r'
 
     with writer.saving(fig, fname, 100):
         for i in index:
@@ -448,7 +448,8 @@ def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Hom
 def tensor_pitch_control(td_object, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0, remove_first_frames=0,
                          reaction_time=0.7, max_player_speed=5, average_ball_speed=15, sigma=0.45, lamb=4.3,
                          n_grid_points_x=50, n_grid_points_y=30, device='cpu', dtype=torch.float32,
-                         first_frame=0, last_frame=500, batch_size=250, deg=50, version='GL', max_int=500):
+                         first_frame=0, last_frame=500, batch_size=250, deg=50, version='GL', max_int=500,
+                         team='Home'):
     # create the entire exponent of the intercept probability function based on sigma
     exp = np.pi / np.sqrt(3.) / sigma
 
@@ -547,15 +548,19 @@ def tensor_pitch_control(td_object, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0
 
             tmp2[..., 0] = exp * (ball_travel_time - tti)
             tmp1 = exp * 0.5 * (ti + 1) * 10 + tmp2
-            hh = torch.sigmoid(tmp1[:h_players]).mul_(lamb)
+            if team == 'Home':
+                hh = torch.sigmoid(tmp1[:h_players]).mul_(lamb)
+            elif team == 'Away':
+                hh = torch.sigmoid(tmp1[h_players:]).mul_(lamb)
+            else:
+                raise ValueError(f'team needs to be either "Home" or "Away". {team} is not valid')
+
             h = hh.sum(0)
 
             S = torch.exp(-lamb * torch.sum(softplus(tmp1) - softplus(tmp2), dim=0).div_(exp))
             # fill pitch control tensor
             pc[(0 + b * batch_size):(
-                np.minimum(0 + (b + 1) * batch_size, int(0 + n_frames)))] = torch.matmul(S * h,
-                                                                                                             wi).mul_(
-                5.)
+                np.minimum(0 + (b + 1) * batch_size, int(0 + n_frames)))] = torch.matmul(S * h, wi).mul_(5.)
 
     elif version == 'int':
         print("Running pitch control computation based on Spearman's integration method")
@@ -608,8 +613,14 @@ def tensor_pitch_control(td_object, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0
                 # added relu to tackle infinite negative due to infinite large sumy!
                 y += dt * lamb * relu(1. - sumy) * 1. / (1. + torch.exp(-exp * (dt * tt + ball_travel_time - tti)))
 
-            pc[(first_frame + b * batch_size):(
-                np.minimum(first_frame + (b + 1) * batch_size, int(first_frame + n_frames)))] = y[:h_players].sum(0)
+            if team == 'Home':
+                pc[(first_frame + b * batch_size):
+                   (np.minimum(first_frame + (b + 1) * batch_size, int(first_frame + n_frames)))] = y[:h_players].sum(0)
+            elif team == 'Away':
+                pc[(first_frame + b * batch_size):
+                   (np.minimum(first_frame + (b + 1) * batch_size, int(first_frame + n_frames)))] = y[h_players:].sum(0)
+            else:
+                raise ValueError(f'team needs to be either "Home" or "Away". {team} is not valid')
 
     return pc
 
@@ -618,7 +629,7 @@ def plot_tensor_pitch_control(td_object, frame, pitch_control=None, jitter=1e-12
                               remove_first_frames=0, reaction_time=0.7, max_player_speed=5, average_ball_speed=15,
                               sigma=0.45, lamb=4.3, n_grid_points_x=50, n_grid_points_y=30, device='cpu',
                               dtype=torch.float32, first_frame=0, last_frame=500, batch_size=250, deg=50, version='GL',
-                              cmap='bwr', velocities=True, flip_y=True):
+                              cmap=None, velocities=True, flip_y=True, team='Home'):
     if pitch_control is None:
         pitch_control = tensor_pitch_control(td_object=td_object, jitter=jitter, pos_nan_to=pos_nan_to,
                                              vel_nan_to=vel_nan_to, remove_first_frames=remove_first_frames,
@@ -628,6 +639,15 @@ def plot_tensor_pitch_control(td_object, frame, pitch_control=None, jitter=1e-12
                                              device=device,
                                              dtype=dtype, first_frame=first_frame, last_frame=last_frame,
                                              batch_size=batch_size, deg=deg, version=version)
+
+    # determine colormap
+    if cmap is None:
+        if team == 'Home':
+            cmap = 'bwr'
+        elif team == 'Away':
+            cmap = 'bwr_r'
+        else:
+            raise ValueError(f'team needs to be either "Home" or "Away". {team} is not valid')
 
     frame_number = frame - first_frame
     # plot players
@@ -666,13 +686,11 @@ def animate_tensor_pitch_control(td_object, pitch_control=None, jitter=1e-12, po
                                  remove_first_frames=0, reaction_time=0.7, max_player_speed=5, average_ball_speed=15,
                                  sigma=0.45, lamb=4.3, n_grid_points_x=50, n_grid_points_y=30, device='cpu',
                                  dtype=torch.float32, first_frame_calc=0, last_frame_calc=500, batch_size=250, deg=50,
-                                 version='GL', cmap='bwr', velocities=True, flip_y=True,
+                                 version='GL', cmap=None, velocities=True, flip_y=True, team='Home',
                                  progress_steps=[0.25, 0.5, 0.75], frames_per_second=None, fpath=None,
                                  fname='Animation', pitch_col='#1c380e', line_col='white',
                                  colors=['red', 'blue', 'black'], PlayerAlpha=0.7, first_frame_ani=0,
                                  last_frame_ani=100):
-
-
     if frames_per_second is None:
         frames_per_second = td_object.fps
 
@@ -685,6 +703,15 @@ def animate_tensor_pitch_control(td_object, pitch_control=None, jitter=1e-12, po
         data = data.iloc[first_frame_ani - 1: last_frame_ani]
     index = data.index
     index_range = last_frame_ani - first_frame_ani
+
+    # determine colormap
+    if cmap is None:
+        if team == 'Home':
+            cmap = 'bwr'
+        elif team == 'Away':
+            cmap = 'bwr_r'
+        else:
+            raise ValueError(f'team needs to be either "Home" or "Away". {team} is not valid')
 
     # get pitch control for entire frame!?
     if pitch_control is None:
@@ -735,11 +762,11 @@ def animate_tensor_pitch_control(td_object, pitch_control=None, jitter=1e-12, po
         for i in index:
             figobjs = []  # this is used to collect up all the axis objects so that they can be deleted after each iteration
             if flip_y:
-                PC = ax.imshow(np.flipud(pitch_control[i-1-first_frame_ani].rot90()), extent=(
+                PC = ax.imshow(np.flipud(pitch_control[i - 1 - first_frame_ani].rot90()), extent=(
                     td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[1],
                     td_object.y_range_pitch[0]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
             else:
-                PC = ax.imshow(np.flipud(pitch_control[i-1-first_frame_ani].rot90()), extent=(
+                PC = ax.imshow(np.flipud(pitch_control[i - 1 - first_frame_ani].rot90()), extent=(
                     td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[0],
                     td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
             figobjs.append(PC)
