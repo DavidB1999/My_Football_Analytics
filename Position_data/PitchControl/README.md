@@ -296,11 +296,11 @@ object from my tracking data package. Function is based on the code by "anenglis
 
 
 ### plot_tensor_pitch_control
-                            (td_object, frame, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0, remove_first_frames=0,
-                            reaction_time=0.7, max_player_speed=5, average_ball_speed=15, sigma=0.45, lamb=4.3,
-                            n_grid_points_x=50, n_grid_points_y=30, device='cpu', dtype=torch.float32,
-                            first_frame=0, last_frame=500, batch_size=250, deg=50, version='GL', cmap='bwr',
-                            velocities=True)
+                            (td_object, frame, pitch_control, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0,
+                            remove_first_frames=0, reaction_time=0.7, max_player_speed=5, average_ball_speed=15,
+                            sigma=0.45, lamb=4.3, n_grid_points_x=50, n_grid_points_y=30, device='cpu',
+                            dtype=torch.float32, first_frame=0, last_frame=500, batch_size=250, deg=50, version='GL',
+                            cmap='bwr', velocities=True)
 
 Function to plot players and pitch control a pitch. Uses the *plot_players* from the tracking data class and the 
 *tensor_pitch_control* function. 
@@ -308,6 +308,8 @@ Function to plot players and pitch control a pitch. Uses the *plot_players* from
 **Parameters**
 
 + *td_object (tracking_data class object)* - An object of the tracking_data class containing data and all required attributes 
++ *frame (int)* - frame to be plotted (absolute frame number)
++ *pitch_control (torch.tensor)* - Output from *tensor_pitch_control* function. *tensor_pitch_control* will only be called if None 
 + *jitter (float)* - minimal value added to players velocity to avoid devision by zero
 + *pos_nan_to (float)* - Value to replace missing values in position data with. Default is -1000 to render the impact of inactive players to basically 0.
 + *vel_nan_to (float)* - Value to replace missing values in velocity data with. Default is 0 to render the impact of inactive players to basically 0.
@@ -326,6 +328,7 @@ Function to plot players and pitch control a pitch. Uses the *plot_players* from
 + *version (str)* - Computation version. Allows for both the Gauss-Legendre quadrature ('GL') version and an classical integration version ('int').
 + *cmap (str)* - color map used for the pitch control visualization
 + *velocities (boolean)* - Whether velocities are supposed to be displayed
++ *flip_y (boolean)* - Indicates whether the pitch control grid needs to be flipped on y-axis. 
 
 **Returns**
 

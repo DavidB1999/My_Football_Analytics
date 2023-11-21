@@ -446,8 +446,7 @@ def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Hom
 def tensor_pitch_control(td_object, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0, remove_first_frames=0,
                          reaction_time=0.7, max_player_speed=5, average_ball_speed=15, sigma=0.45, lamb=4.3,
                          n_grid_points_x=50, n_grid_points_y=30, device='cpu', dtype=torch.float32,
-                         first_frame=0, last_frame=500, batch_size=250, deg=50, version='GL', max_int=500,
-                         fps=25):
+                         first_frame=0, last_frame=500, batch_size=250, deg=50, version='GL', max_int=500):
     # create the entire exponent of the intercept probability function based on sigma
     exp = np.pi / np.sqrt(3.) / sigma
 
@@ -560,7 +559,7 @@ def tensor_pitch_control(td_object, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0
     elif version == 'int':
         print("Running pitch control computation based on Spearman's integration method")
         relu = torch.nn.ReLU()
-        dt = 1/td_object.fps
+        dt = 1 / td_object.fps
         # loop over batches needed to cover all frames
         for b in range(int(n_frames / batch_size)):
             print(f'Current batch: {b + 1}/{int(n_frames / batch_size)}')
@@ -606,7 +605,7 @@ def tensor_pitch_control(td_object, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0
                 if torch.min(sumy) > 0.99:  # convergence
                     break
                 # added relu to tackle infinite negative due to infinite large sumy!
-                y += dt * lamb * relu(1. - sumy) * 1. / (1. + torch.exp(-exp * (dt*tt + ball_travel_time - tti)))
+                y += dt * lamb * relu(1. - sumy) * 1. / (1. + torch.exp(-exp * (dt * tt + ball_travel_time - tti)))
 
             pc[(first_frame + b * batch_size):(
                 np.minimum(first_frame + (b + 1) * batch_size, int(first_frame + n_frames)))] = y[:h_players].sum(0)
@@ -614,20 +613,22 @@ def tensor_pitch_control(td_object, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0
     return pc
 
 
-def plot_tensor_pitch_control(td_object, frame, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0, remove_first_frames=0,
-                              reaction_time=0.7, max_player_speed=5, average_ball_speed=15, sigma=0.45, lamb=4.3,
-                              n_grid_points_x=50, n_grid_points_y=30, device='cpu', dtype=torch.float32,
-                              first_frame=0, last_frame=500, batch_size=250, deg=50, version='GL', cmap='bwr',
-                              velocities=True):
+def plot_tensor_pitch_control(td_object, frame, pitch_control=None, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0,
+                              remove_first_frames=0, reaction_time=0.7, max_player_speed=5, average_ball_speed=15,
+                              sigma=0.45, lamb=4.3, n_grid_points_x=50, n_grid_points_y=30, device='cpu',
+                              dtype=torch.float32, first_frame=0, last_frame=500, batch_size=250, deg=50, version='GL',
+                              cmap='bwr', velocities=True, flip_y=True):
 
-    pitch_control= tensor_pitch_control(td_object=td_object, jitter=jitter, pos_nan_to=pos_nan_to,
-                                         vel_nan_to=vel_nan_to, remove_first_frames=remove_first_frames,
-                                         reaction_time=reaction_time, max_player_speed=max_player_speed,
-                                         average_ball_speed=average_ball_speed, sigma=sigma, lamb=lamb,
-                                         n_grid_points_x=n_grid_points_x, n_grid_points_y=n_grid_points_y,
-                                         device=device,
-                                         dtype=dtype, first_frame=first_frame, last_frame=last_frame,
-                                         batch_size=batch_size, deg=deg, version=version)
+    if pitch_control is None:
+        pitch_control = tensor_pitch_control(td_object=td_object, jitter=jitter, pos_nan_to=pos_nan_to,
+                                             vel_nan_to=vel_nan_to, remove_first_frames=remove_first_frames,
+                                             reaction_time=reaction_time, max_player_speed=max_player_speed,
+                                             average_ball_speed=average_ball_speed, sigma=sigma, lamb=lamb,
+                                             n_grid_points_x=n_grid_points_x, n_grid_points_y=n_grid_points_y,
+                                             device=device,
+                                             dtype=dtype, first_frame=first_frame, last_frame=last_frame,
+                                             batch_size=batch_size, deg=deg, version=version)
+
     frame_number = frame - first_frame
     # plot players
     fig, ax = td_object.plot_players(frame=frame_number, velocities=velocities)
@@ -635,14 +636,14 @@ def plot_tensor_pitch_control(td_object, frame, jitter=1e-12, pos_nan_to=-1000, 
     # ensure correct orientation
     mx_pitch = max(td_object.y_range_pitch)
     mx_data = max(td_object.y_range_data)
-    if td_object.y_range_pitch.index(mx_pitch) == td_object.y_range_data.index(mx_data):
+    if flip_y:
         ax.imshow(np.flipud(pitch_control[frame_number].rot90()), extent=(
             td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[1],
             td_object.y_range_pitch[0]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
     else:
         ax.imshow(np.flipud(pitch_control[frame_number].rot90()), extent=(
-            td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[1],
-            td_object.y_range_pitch[0]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
+            td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[0],
+            td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
 
     return fig
 
