@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import scipy.signal as signal
 import matplotlib.animation as animation
 
+
 class tracking_data:
 
     def __init__(self, data, data_source, x_range_data=None, y_range_data=None,
@@ -161,29 +162,49 @@ class tracking_data:
         for dim in self.dimensions.keys():
             # home
             data[self.dimensions[dim]['home_columns']] = self.dimensions[dim]['pitch'][0] + (data[
-                self.dimensions[dim]['home_columns']] + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor']
+                                                                                                 self.dimensions[dim][
+                                                                                                     'home_columns']] +
+                                                                                             self.dimensions[dim][
+                                                                                                 'data'][0] * -1) * \
+                                                         self.dimensions[dim]['scaling_factor']
             # ball
             data[self.dimensions[dim]['ball_columns']] = self.dimensions[dim]['pitch'][0] + (data[
-                self.dimensions[dim]['ball_columns']] + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor']
+                                                                                                 self.dimensions[dim][
+                                                                                                     'ball_columns']] +
+                                                                                             self.dimensions[dim][
+                                                                                                 'data'][0] * -1) * \
+                                                         self.dimensions[dim]['scaling_factor']
 
             # away (mirror away?)
             if dim in self.mirror_away:
                 data[self.dimensions[dim]['away_columns']] = self.dimensions[dim]['pitch'][1] - (data[
-                    self.dimensions[dim]['away_columns']] + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor']
+                                                                                                     self.dimensions[
+                                                                                                         dim][
+                                                                                                         'away_columns']] +
+                                                                                                 self.dimensions[dim][
+                                                                                                     'data'][0] * -1) * \
+                                                             self.dimensions[dim]['scaling_factor']
             else:
                 data[self.dimensions[dim]['away_columns']] = self.dimensions[dim]['pitch'][0] + (data[
-                    self.dimensions[dim]['away_columns']] + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor']
+                                                                                                     self.dimensions[
+                                                                                                         dim][
+                                                                                                         'away_columns']] +
+                                                                                                 self.dimensions[dim][
+                                                                                                     'data'][0] * -1) * \
+                                                             self.dimensions[dim]['scaling_factor']
 
         if self.mirror_second_half:
             half_filter = data[self.period_column] == 2
             # home
             data.loc[half_filter, self.dimensions[dim]['home_columns']] = self.dimensions[dim]['pitch'][1] - \
                                                                           (data[self.dimensions[dim]['home_columns']][
-                                                                              half_filter] + self.dimensions[dim]['data'][0] * -1) *1
+                                                                               half_filter] +
+                                                                           self.dimensions[dim]['data'][0] * -1) * 1
             # away
             data.loc[half_filter, self.dimensions[dim]['away_columns']] = self.dimensions[dim]['pitch'][1] - \
                                                                           (data[self.dimensions[dim]['away_columns']][
-                                                                              half_filter] + self.dimensions[dim]['data'][0] * -1) *1
+                                                                               half_filter] +
+                                                                           self.dimensions[dim]['data'][0] * -1) * 1
         self.playing_direction_home = self.find_direction('Home', data)
         self.playing_direction_away = self.find_direction('Away', data)
         self.Home_GK = self.find_goalkeeper('Home', data)
@@ -212,7 +233,6 @@ class tracking_data:
 
         # get the row / frame
         plot_data = self.data.iloc[frame]
-
         # for both teams
         for team, color in zip(['home', 'away', 'ball'], colors):
             # get x and y values
@@ -220,9 +240,12 @@ class tracking_data:
             y_values = plot_data[self.dimensions[self.y_cols_pattern][''.join([team, '_columns'])]].astype('float')
             ax.scatter(x=x_values, y=y_values, s=20, c=color)
             if velocities and team != 'ball':
-                vx_columns = ['{}_vx'.format(c[:-2]) for c in list(self.dimensions[self.x_cols_pattern][''.join([team, '_columns'])])]  # column header for player x positions
-                vy_columns = ['{}_vy'.format(c[:-2]) for c in list(self.dimensions[self.y_cols_pattern][''.join([team, '_columns'])])]  # column header for player y positions
-                ax.quiver(x_values, y_values, plot_data[vx_columns].astype('float'), plot_data[vy_columns].astype('float'), color=color,
+                vx_columns = ['{}_vx'.format(c[:-2]) for c in list(self.dimensions[self.x_cols_pattern][''.join(
+                    [team, '_columns'])])]  # column header for player x positions
+                vy_columns = ['{}_vy'.format(c[:-2]) for c in list(self.dimensions[self.y_cols_pattern][''.join(
+                    [team, '_columns'])])]  # column header for player y positions
+                ax.quiver(x_values, y_values, plot_data[vx_columns].astype('float'),
+                          plot_data[vy_columns].astype('float'), color=color,
                           angles='xy', scale_units='xy', scale=1, width=0.0015,
                           headlength=5, headwidth=3, alpha=PlayerAlpha)
 
@@ -253,7 +276,6 @@ class tracking_data:
             vx = vx.astype('float')
             vy = data[player + "_y"].diff() / dt
             vy = vy.astype('float')
-
 
             if maxspeed > 0:
                 # remove unsmoothed data points that exceed the maximum speed (these are most likely position errors)
@@ -301,8 +323,8 @@ class tracking_data:
         return data
 
     # credit and details: https://github.com/Friends-of-Tracking-Data-FoTD/LaurieOnTracking/blob/master/Metrica_Viz.py
-    def animation_clip(self, frames_per_second=25, fname='Animated_Clip',pitch_col='#1c380e',
-                       line_col='white', data=None, frames=None, colors= ['red', 'blue', 'black'],
+    def animation_clip(self, frames_per_second=25, fname='Animated_Clip', pitch_col='#1c380e',
+                       line_col='white', data=None, frames=None, colors=['red', 'blue', 'black'],
                        velocities=False, PlayerAlpha=0.7, fpath=None):
 
         # if no other data frame is supplied we use the class data
@@ -312,7 +334,7 @@ class tracking_data:
         field_dimen = (max(self.dimensions['x']['pitch']), max(self.dimensions['y']['pitch']))
 
         if frames is not None:
-            data = data.iloc[frames[0]-1:frames[1]]
+            data = data.iloc[frames[0] - 1:frames[1]]
         index = data.index
 
         FFMpegWriter = animation.writers['ffmpeg']
@@ -346,13 +368,15 @@ class tracking_data:
                 # for both teams
                 for team, color in zip(['home', 'away', 'ball'], colors):
                     # get x and y values
-                    x_values = data[self.dimensions[self.x_cols_pattern][''.join([team, '_columns'])]].loc[i].astype('float')
-                    y_values = data[self.dimensions[self.y_cols_pattern][''.join([team, '_columns'])]].loc[i].astype('float')
+                    x_values = data[self.dimensions[self.x_cols_pattern][''.join([team, '_columns'])]].loc[i].astype(
+                        'float')
+                    y_values = data[self.dimensions[self.y_cols_pattern][''.join([team, '_columns'])]].loc[i].astype(
+                        'float')
                     objs = ax.scatter(x=x_values, y=y_values, s=20, c=color)
                     figobjs.append(objs)
                     if velocities and team != 'ball':
                         vx_columns = ['{}_vx'.format(c[:-2]) for c in list(self.dimensions[self.x_cols_pattern][''.join(
-                            [team, '_columns'])])] # column header for player x positions
+                            [team, '_columns'])])]  # column header for player x positions
                         vy_columns = ['{}_vy'.format(c[:-2]) for c in list(self.dimensions[self.y_cols_pattern][''.join(
                             [team, '_columns'])])]  # column header for player y positions
                         objs = ax.quiver(x_values, y_values, data[vx_columns].loc[i], data[vy_columns].loc[i],
@@ -362,7 +386,8 @@ class tracking_data:
                 frame_minute = int(data[self.time_col][i] / 60.)
                 frame_second = (data[self.time_col][i] / 60. - frame_minute) * 60.
                 timestring = "%d:%1.2f" % (frame_minute, frame_second)
-                objs = ax.text(field_dimen[0]/2 - 0.05*field_dimen[0], self.y_range_pitch[1] + 0.05*self.y_range_pitch[1],
+                objs = ax.text(field_dimen[0] / 2 - 0.05 * field_dimen[0],
+                               self.y_range_pitch[1] + 0.05 * self.y_range_pitch[1],
                                timestring, fontsize=14)
                 figobjs.append(objs)
                 writer.grab_frame()
@@ -390,12 +415,11 @@ class tracking_data:
         pitchEnd1 = min(self.x_range_pitch)
         pitchEnd2 = max(self.x_range_pitch)
 
-        if (abs(mean_pos-pitchEnd1)) < (abs(mean_pos-pitchEnd2)):
-            direction='ltr'
+        if (abs(mean_pos - pitchEnd1)) < (abs(mean_pos - pitchEnd2)):
+            direction = 'ltr'
         else:
-            direction='rtl'
+            direction = 'rtl'
         return direction
-
 
     def find_goalkeeper(self, team, data=None):
         '''
@@ -413,8 +437,7 @@ class tracking_data:
         else:
             pitchEnd = self.x_range_pitch[1]
 
-
-        GK_col = (mean_positions-pitchEnd).abs().idxmin(axis=0)
+        GK_col = (mean_positions - pitchEnd).abs().idxmin(axis=0)
         return GK_col.split('_')[1]
 
     def get_team(self, team, selection='All', T_P=False):
@@ -425,7 +448,7 @@ class tracking_data:
             data = self.data.filter(regex=fr'{team}.*v')
         elif selection == 'position':
             data = self.data.filter(regex=fr'{team}.*_x$|{team}.*_y$')
-
+        data = data[sorted(data.columns)]
         if T_P:
             return pd.concat([self.data[[self.period_column, self.time_col]], data], axis=1)
         else:
@@ -435,6 +458,5 @@ class tracking_data:
         if pos_only:
             return self.data.filter(like=ball_pattern)
         else:
-            return pd.concat([self.data[[self.period_column, self.time_col]], self.data.filter(like=ball_pattern)], axis=1)
-
-
+            return pd.concat([self.data[[self.period_column, self.time_col]], self.data.filter(like=ball_pattern)],
+                             axis=1)

@@ -669,12 +669,15 @@ def plot_tensor_pitch_control(td_object, frame, pitch_control=None, jitter=1e-12
 
 
 # convert data frame to array (usually for position data in pitch control model
-def pos_to_array(pos_data, nan_to, ball=False):
+def pos_to_array(pos_data, nan_to, ball=False, Fernandez=False):
     if 'Period' in pos_data.columns or 'Time [s]' in pos_data.columns:
         raise ValueError('Data should include positon data only. Not any other columns!')
     n_players = int(len(pos_data.columns) / 2)
     if ball:
-        array = np.asarray(pos_data.iloc[:, range(0, 2)])[:, None, None, :]
+        if Fernandez:
+            array = np.asarray(pos_data.iloc[:, range(0, 2)])
+        else:
+            array = np.asarray(pos_data.iloc[:, range(0, 2)])[:, None, None, :]
     else:
         array = np.array([np.asarray(pos_data.iloc[:, range(j * 2, j * 2 + 2)]) for j in range(n_players)])
 
