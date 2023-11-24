@@ -1,7 +1,7 @@
 # Pitch control
 
 This is supposed to be a deep dive into pitch control and related concepts. - long term project <br>
-So far i implemented different ways to compute Spearman's as well as Fernandez's pitch control model. <br>
+So far i implemented different ways to compute Spearman's as well as Fernandez' pitch control model. <br>
 
 There are many ways to implement pitch control / space control. Some of the most prominent are:
 
