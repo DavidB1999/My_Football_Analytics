@@ -448,8 +448,17 @@ def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Hom
 def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0, remove_first_frames=0,
                          reaction_time=0.7, max_player_speed=None, average_ball_speed=15, sigma=0.45, lamb=4.3,
                          n_grid_points_x=50, n_grid_points_y=30, device='cpu', dtype=torch.float32,
-                         first_frame=0, last_frame=500, batch_size=250, deg=50, implementation='GL', max_int=500,
-                         team='Home'):
+                         first_frame=0, last_frame=500, batch_size=250, deg=50, implementation=None, max_int=500,
+                         team='Home', return_pcpp=False):
+
+    if implementation is None:
+        if version == 'Spearman':
+            implementation = 'GL'
+        elif version == 'Fernandez':
+            implementation == 'org'
+        else:
+            raise ValueError(f'{version} is not a valid version. Chose either "Fernandez" or "Spearman"')
+
     # make sure velocities are computed
     td_object.get_velocities()
 
@@ -474,6 +483,9 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
 
     # number of frames over which we model pitch control
     n_frames = last_frame - first_frame
+    # get number of players
+    n_players = Home_array.shape[0] + Away_array.shape[0]
+    h_players = Home_array.shape[0]
 
     if version == 'Spearman':
 
@@ -497,9 +509,6 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
                                                device=device, dtype=dtype))
         target_position = torch.stack([XX, YY], 2)[None, None, :, :, :]  # all possible positions
 
-        # get number of players
-        n_players = Home_array.shape[0] + Away_array.shape[0]
-        h_players = Home_array.shape[0]
         # time to intercept empty torch
         tti = torch.empty([n_players, batch_size, n_grid_points_x, n_grid_points_y], device=device, dtype=dtype)
         # n_players*batch_size*grid
@@ -637,7 +646,9 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
                         0)
                 else:
                     raise ValueError(f'team needs to be either "Home" or "Away". {team} is not valid')
-
+        else:
+            raise ValueError(f'{implementation} is not a valid implementation. Chose either "org" or "adap" for '
+                             f'the Fernandez-version and either "int" or "GL" for the Spearman-version.')
         return pc
 
     elif version == 'Fernandez':
@@ -756,25 +767,59 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
             infl_h[isnan_h] = 0
             infl_a[isnan_a] = 0
 
-            # based on both teams influence areas we calculate the pitch control by transforming the delta into
-            # a probability via the sigmoid function
-            pitch_control[(b * batch_size):
-                          (np.minimum((b + 1) * batch_size, int(n_frames))), :] = torch.sigmoid(
-                torch.sum(infl_h, 0) - torch.sum(infl_a, 0))
+            if implementation == 'org':
+                # based on both teams influence areas we calculate the pitch control by transforming the delta into
+                # a probability via the sigmoid function
+                pitch_control[(b * batch_size):
+                              (np.minimum((b + 1) * batch_size, int(n_frames))), :] = torch.sigmoid(
+                    torch.sum(infl_h, 0) - torch.sum(infl_a, 0))
+            elif implementation == 'adap':
+                # rather than putting influence functions through a sigmoid function, just set individual player's
+                # control over a location to be their proportion of the total influence at that location.
+                pc = torch.cat([infl_h, infl_a]) / torch.sum(torch.cat([infl_h, infl_a]), 0)
+                if return_pcpp:
+                    pcpp = torch.Tensor(n_players, n_frames, xy_query.shape[0])
+                    pcpp[:, (b * batch_size):(np.minimum((b + 1) * batch_size, int(n_frames))), :] = pc
+                pitch_control[(b * batch_size):(np.minimum((b + 1) * batch_size, int(n_frames))), :] = torch.sum(
+                    pc[0:h_players], 0)
+            else:
+                raise ValueError(f'{implementation} is not a valid implementation. Chose either "org" or "adap" for '
+                                 f'the Fernandez-version and either "int" or "GL" for the Spearman-version.')
+        if return_pcpp:
+            return pitch_control, pcpp
+        else:
+            return pitch_control
 
-        return pitch_control
+    else:
+        raise ValueError(f'{version} is not a valid version. Chose either "Fernandez" or "Spearman"')
 
 
 def plot_tensor_pitch_control(td_object, frame, pitch_control=None, version='Spearman', jitter=1e-12, pos_nan_to=-1000,
                               vel_nan_to=0, remove_first_frames=0, reaction_time=0.7, max_player_speed=None,
                               average_ball_speed=15, sigma=0.45, lamb=4.3, n_grid_points_x=50, n_grid_points_y=30,
                               device='cpu', dtype=torch.float32, first_frame=0, last_frame=500, batch_size=250, deg=50,
-                              implementation='GL', max_int=500, cmap=None, velocities=True, flip_y=None, team='Home'):
+                              implementation=None, max_int=500, cmap=None, velocities=True, flip_y=None, team='Home'):
+    if implementation is None:
+        if version == 'Spearman':
+            implementation = 'GL'
+        elif version == 'Fernandez':
+            implementation == 'org'
+        else:
+            raise ValueError(f'{version} is not a valid version. Chose either "Fernandez" or "Spearman"')
+
     if flip_y is None:
         if version == 'Spearman':
-            flip_y=True
+            flip_y = True
         elif version == 'Fernandez':
-            flip_y=False
+            if implementation is 'org':
+                flip_y = False
+            elif implementation is 'adap':
+                flip_y = True
+            else:
+                raise ValueError(f'{implementation} is not a valid implementation. Chose either "org" or "adap" for '
+                                 f'the Fernandez-version and either "int" or "GL" for the Spearman-version.')
+        else:
+            raise ValueError(f'{version} is not a valid version. Chose either "Fernandez" or "Spearman"')
 
     if pitch_control is None:
         pitch_control = tensor_pitch_control(td_object=td_object, version=version, jitter=jitter, pos_nan_to=pos_nan_to,
@@ -804,7 +849,7 @@ def plot_tensor_pitch_control(td_object, frame, pitch_control=None, version='Spe
     # ensure correct orientation
     mx_pitch = max(td_object.y_range_pitch)
     mx_data = max(td_object.y_range_data)
-    if version =='Spearman':
+    if version == 'Spearman':
         if flip_y:
             ax.imshow(np.flipud(pitch_control[frame_number].rot90()), extent=(
                 td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[1],
@@ -822,6 +867,8 @@ def plot_tensor_pitch_control(td_object, frame, pitch_control=None, version='Spe
             ax.imshow(np.flipud(pitch_control[frame_number]), extent=(
                 td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[0],
                 td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
+    else:
+        raise ValueError(f'{version} is not a valid version. Chose either "Fernandez" or "Spearman"')
 
     return fig
 
@@ -829,7 +876,7 @@ def plot_tensor_pitch_control(td_object, frame, pitch_control=None, version='Spe
 # convert data frame to array (usually for position data in pitch control model
 def pos_to_array(pos_data, nan_to, ball=False, Fernandez=False):
     if 'Period' in pos_data.columns or 'Time [s]' in pos_data.columns:
-        raise ValueError('Data should include positon data only. Not any other columns!')
+        raise ValueError('Data should include position data only. Not any other columns!')
     n_players = int(len(pos_data.columns) / 2)
     if ball:
         if Fernandez:
@@ -852,6 +899,14 @@ def animate_tensor_pitch_control(td_object, version='Spearman', pitch_control=No
                                  fpath=None, fname='Animation', pitch_col='#1c380e', line_col='white',
                                  colors=['red', 'blue', 'black'], PlayerAlpha=0.7, first_frame_ani=0,
                                  last_frame_ani=100):
+    if implementation is None:
+        if version == 'Spearman':
+            implementation = 'GL'
+        elif version == 'Fernandez':
+            implementation == 'org'
+        else:
+            raise ValueError(f'{version} is not a valid version. Chose either "Fernandez" or "Spearman"')
+
     if frames_per_second is None:
         frames_per_second = td_object.fps
 
@@ -859,7 +914,15 @@ def animate_tensor_pitch_control(td_object, version='Spearman', pitch_control=No
         if version == 'Spearman':
             flip_y = True
         elif version == 'Fernandez':
-            flip_y = False
+            if implementation is 'org':
+                flip_y = False
+            elif implementation is 'adap':
+                flip_y = True
+            else:
+                raise ValueError(f'{implementation} is not a valid implementation. Chose either "org" or "adap" for '
+                                 f'the Fernandez-version and either "int" or "GL" for the Spearman-version.')
+        else:
+            raise ValueError(f'{version} is not a valid version. Chose either "Fernandez" or "Spearman"')
 
     # get position data
     field_dimen = (max(td_object.dimensions['x']['pitch']), max(td_object.dimensions['y']['pitch']))
@@ -949,6 +1012,8 @@ def animate_tensor_pitch_control(td_object, version='Spearman', pitch_control=No
                     PC = ax.imshow(np.flipud(pitch_control[i - 1 - first_frame_ani]), extent=(
                         td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[0],
                         td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
+            else:
+                raise ValueError(f'{version} is not a valid version. Chose either "Fernandez" or "Spearman"')
             figobjs.append(PC)
             for team, color in zip(['home', 'away', 'ball'], colors):
                 # get x and y values
