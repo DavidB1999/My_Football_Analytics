@@ -828,13 +828,7 @@ def plot_tensor_pitch_control(td_object, frame, pitch_control=None, version='Spe
         if version == 'Spearman':
             flip_y = True
         elif version == 'Fernandez':
-            if implementation is 'org':
-                flip_y = False
-            elif implementation is 'adap':
-                flip_y = True
-            else:
-                raise ValueError(f'{implementation} is not a valid implementation. Chose either "org" or "adap" for '
-                                 f'the Fernandez-version and either "int" or "GL" for the Spearman-version.')
+            flip_y = False
         else:
             raise ValueError(f'{version} is not a valid version. Chose either "Fernandez" or "Spearman"')
 
@@ -932,13 +926,7 @@ def animate_tensor_pitch_control(td_object, version='Spearman', pitch_control=No
         if version == 'Spearman':
             flip_y = True
         elif version == 'Fernandez':
-            if implementation is 'org':
-                flip_y = False
-            elif implementation is 'adap':
-                flip_y = True
-            else:
-                raise ValueError(f'{implementation} is not a valid implementation. Chose either "org" or "adap" for '
-                                 f'the Fernandez-version and either "int" or "GL" for the Spearman-version.')
+            flip_y = False
         else:
             raise ValueError(f'{version} is not a valid version. Chose either "Fernandez" or "Spearman"')
 
