@@ -10,6 +10,10 @@ import torch
 from torch.nn.functional import softplus
 
 
+################################################################################################################
+#Laurie Shaw implememtation #####################################################################################
+################################################################################################################
+
 # class player to bundle all steps for each player
 def get_player_from_data(td_object, pid, team, data=None, frame=None, params=None):
     if params is None:
@@ -28,6 +32,7 @@ def get_player_from_data(td_object, pid, team, data=None, frame=None, params=Non
         p_object = player(data=player_data, pid=pid, GK=GK, team=team, params=params, frame=frame)
     return p_object
 
+################################################################################################################
 
 def get_all_players(td_object, frame=None, teams=['Home', 'Away'], params=None):
     if params is None:
@@ -42,6 +47,7 @@ def get_all_players(td_object, frame=None, teams=['Home', 'Away'], params=None):
                 players.append(c_player)
     return players
 
+################################################################################################################
 
 def check_offside(td_object, frame, attacking_team, verbose=False, tol=0.2):
     # get players
@@ -98,6 +104,7 @@ def check_offside(td_object, frame, attacking_team, verbose=False, tol=0.2):
 
     return attacking_players
 
+################################################################################################################
 
 def default_model_params(time_to_control_veto=3, mpa=7, mps=5, rt=0.7, tti_s=0.45, kappa_def=1,
                          lambda_att=4.3, kappa_gk=3, abs=15, dt=0.04, mit=10, model_converge_tol=0.01):
@@ -131,6 +138,7 @@ def default_model_params(time_to_control_veto=3, mpa=7, mps=5, rt=0.7, tti_s=0.4
             np.sqrt(3) * params['tti_sigma'] / np.pi + 1 / params['lambda_def'])
     return params
 
+################################################################################################################
 
 class player:
     def __init__(self, data, pid, GK, team, params=None, frame=None):
@@ -197,6 +205,7 @@ class player:
         f = 1 / (1. + np.exp(-np.pi / np.sqrt(3.0) / self.params['tti_sigma'] * (T - self.time_to_intercept)))
         return f
 
+################################################################################################################
 
 def pitch_control_at_frame(frame, td_object, n_grid_cells_x=50, offside=False, attacking_team='Home', params=None):
     if params is None:
@@ -252,6 +261,7 @@ def pitch_control_at_frame(frame, td_object, n_grid_cells_x=50, offside=False, a
     assert 1 - checksum < params['model_converge_tol'], "Checksum failed: %1.3f" % (1 - checksum)
     return PPCFa, xgrid, ygrid
 
+################################################################################################################
 
 def pitch_control_at_target(target_position, attacking_players, defending_players, ball_start_pos, params=None):
     if params is None:
@@ -317,6 +327,7 @@ def pitch_control_at_target(target_position, attacking_players, defending_player
             print("Integration failed to converge: %1.3f" % (ptot))
         return PPCFatt[i - 1], PPCFdef[i - 1]
 
+################################################################################################################
 
 def plot_pitch_control(td_object, frame, attacking_team='Home', PPCF=None, velocities=False, params=None,
                        n_grid_cells_x=50, offside=False):
@@ -335,6 +346,7 @@ def plot_pitch_control(td_object, frame, attacking_team='Home', PPCF=None, veloc
         max(td_object.y_range_pitch)), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
     return fig, ax
 
+################################################################################################################
 
 def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Home', velocities=False, params=None,
                           n_grid_cells_x=50, frames_per_second=None, fname='Animated_Clip', pitch_col='#1c380e',
@@ -442,6 +454,10 @@ def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Hom
     print("All done!")
     plt.clf()
     plt.close(fig)
+
+################################################################################################################
+# Tensor based implementation based on "anenglishgoat"##########################################################
+################################################################################################################
 
 
 # function to create pitch control model via tensors as done by anenglishgoat but using my tracking data class
@@ -793,6 +809,7 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
     else:
         raise ValueError(f'{version} is not a valid version. Chose either "Fernandez" or "Spearman"')
 
+################################################################################################################
 
 def plot_tensor_pitch_control(td_object, frame, pitch_control=None, version='Spearman', jitter=1e-12, pos_nan_to=-1000,
                               vel_nan_to=0, remove_first_frames=0, reaction_time=0.7, max_player_speed=None,
@@ -872,7 +889,7 @@ def plot_tensor_pitch_control(td_object, frame, pitch_control=None, version='Spe
 
     return fig
 
-
+################################################################################################################
 # convert data frame to array (usually for position data in pitch control model
 def pos_to_array(pos_data, nan_to, ball=False, Fernandez=False):
     if 'Period' in pos_data.columns or 'Time [s]' in pos_data.columns:
@@ -889,6 +906,7 @@ def pos_to_array(pos_data, nan_to, ball=False, Fernandez=False):
     np.nan_to_num(array, copy=False, nan=nan_to)
     return array
 
+################################################################################################################
 
 def animate_tensor_pitch_control(td_object, version='Spearman', pitch_control=None, jitter=1e-12, pos_nan_to=-1000,
                                  vel_nan_to=0, remove_first_frames=0, reaction_time=0.7, max_player_speed=None,
@@ -1056,3 +1074,5 @@ def animate_tensor_pitch_control(td_object, version='Spearman', pitch_control=No
     print("All done!")
     plt.clf()
     plt.close(fig)
+
+################################################################################################################
