@@ -18,7 +18,7 @@ Obviously, there a many others. But these are the ones I relied upon the most on
 
 <br>
 
-<img src="Position_data/PitchControl/Pitch_Control_Plot.png" width="600" />
+<img src="https://github.com/DavidB1999/My_Football_Analytics/blob/main/Position_data/PitchControl/Animation_Fernandez_adap_0_250.gif" width="600" />
 <br>
 <img src="Radar Charts/Radar_Chart_Example.png" width="600" />
 <br>
