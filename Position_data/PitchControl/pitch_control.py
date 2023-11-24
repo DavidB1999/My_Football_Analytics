@@ -766,12 +766,10 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
 
 
 def plot_tensor_pitch_control(td_object, frame, pitch_control=None, version='Spearman', jitter=1e-12, pos_nan_to=-1000,
-                              vel_nan_to=0,
-                              remove_first_frames=0, reaction_time=0.7, max_player_speed=None, average_ball_speed=15,
-                              sigma=0.45, lamb=4.3, n_grid_points_x=50, n_grid_points_y=30, device='cpu',
-                              dtype=torch.float32, first_frame=0, last_frame=500, batch_size=250, deg=50,
-                              implementation='GL',
-                              max_int=500, cmap=None, velocities=True, flip_y=None, team='Home'):
+                              vel_nan_to=0, remove_first_frames=0, reaction_time=0.7, max_player_speed=None,
+                              average_ball_speed=15, sigma=0.45, lamb=4.3, n_grid_points_x=50, n_grid_points_y=30,
+                              device='cpu', dtype=torch.float32, first_frame=0, last_frame=500, batch_size=250, deg=50,
+                              implementation='GL', max_int=500, cmap=None, velocities=True, flip_y=None, team='Home'):
     if flip_y is None:
         if version == 'Spearman':
             flip_y=True
@@ -784,8 +782,7 @@ def plot_tensor_pitch_control(td_object, frame, pitch_control=None, version='Spe
                                              reaction_time=reaction_time, max_player_speed=max_player_speed,
                                              average_ball_speed=average_ball_speed, sigma=sigma, lamb=lamb,
                                              n_grid_points_x=n_grid_points_x, n_grid_points_y=n_grid_points_y,
-                                             device=device,
-                                             dtype=dtype, first_frame=first_frame, last_frame=last_frame,
+                                             device=device, dtype=dtype, first_frame=first_frame, last_frame=last_frame,
                                              batch_size=batch_size, deg=deg, implementation=implementation,
                                              max_int=max_int)
     if len(pitch_control.shape):
@@ -847,13 +844,12 @@ def pos_to_array(pos_data, nan_to, ball=False, Fernandez=False):
 
 
 def animate_tensor_pitch_control(td_object, version='Spearman', pitch_control=None, jitter=1e-12, pos_nan_to=-1000,
-                                 vel_nan_to=0,
-                                 remove_first_frames=0, reaction_time=0.7, max_player_speed=None, average_ball_speed=15,
-                                 sigma=0.45, lamb=4.3, n_grid_points_x=50, n_grid_points_y=30, device='cpu',
-                                 dtype=torch.float32, first_frame_calc=0, last_frame_calc=500, batch_size=250, deg=50,
-                                 implementation='GL', max_int=500, cmap=None, velocities=True, flip_y=None, team='Home',
-                                 progress_steps=[0.25, 0.5, 0.75], frames_per_second=None, fpath=None,
-                                 fname='Animation', pitch_col='#1c380e', line_col='white',
+                                 vel_nan_to=0, remove_first_frames=0, reaction_time=0.7, max_player_speed=None,
+                                 average_ball_speed=15, sigma=0.45, lamb=4.3, n_grid_points_x=50, n_grid_points_y=30,
+                                 device='cpu', dtype=torch.float32, first_frame_calc=0, last_frame_calc=500,
+                                 batch_size=250, deg=50, implementation='GL', max_int=500, cmap=None, velocities=True,
+                                 flip_y=None, team='Home', progress_steps=[0.25, 0.5, 0.75], frames_per_second=None,
+                                 fpath=None, fname='Animation', pitch_col='#1c380e', line_col='white',
                                  colors=['red', 'blue', 'black'], PlayerAlpha=0.7, first_frame_ani=0,
                                  last_frame_ani=100):
     if frames_per_second is None:
