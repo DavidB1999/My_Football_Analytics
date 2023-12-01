@@ -67,13 +67,13 @@ def parse_dfl_pos_data(pos_filepath, mi_filepath, fps=25, print_info=False):
                 # starting at 45 minutes if segement is secondHalf
                 ms_per_frame = 1000 / fps
                 data['Time [s]'].append(time_s)
-                time_s = time_s + ms_per_frame/1000
+                time_s = time_s + ms_per_frame / 1000
                 if segment == 'firstHalf':
                     data['Time'].append(firsthalf_time.time().strftime('%H:%M:%S.%f'))
-                    firsthalf_time = firsthalf_time + datetime.timedelta(milliseconds=ms_per_frame)
+                    firsthalf_time += datetime.timedelta(milliseconds=ms_per_frame)
                 elif segment == 'secondHalf':
                     data['Time'].append(secondhalf_time.time().strftime('%H:%M:%S.%f'))
-                    secondhalf_time = secondhalf_time + datetime.timedelta(milliseconds=ms_per_frame)
+                    secondhalf_time += datetime.timedelta(milliseconds=ms_per_frame)
         # get player positions
         else:
             # all frames in frame set
@@ -108,7 +108,8 @@ def parse_dfl_pos_data(pos_filepath, mi_filepath, fps=25, print_info=False):
                 print(frame_set.get('PersonId'))
                 print(f'Players first and last frame: {sf_player, ef_player}')  # his first frame
                 print(f'As indices this equates to: {start_index_player, end_index_player}')
-                print(f'Overall the data for this half starts end ends with the following indices: {start_index, end_index}')
+                print(
+                    f'Overall the data for this half starts end ends with the following indices: {start_index, end_index}')
 
             # home team player?
             if frame_set.get("PersonId") in links_pID_to_jID["Home"]:
@@ -121,23 +122,20 @@ def parse_dfl_pos_data(pos_filepath, mi_filepath, fps=25, print_info=False):
                     data[f'Home_{jrsy}']['y'] = []
                     # if player starts in second half we need to add nans for first half as well
                     if segment == 'secondHalf':
-                        data[f'Home_{jrsy}']['x'] = data[f'Home_{jrsy}']['x'] + list(np.repeat(np.nan, start_index))
-                        data[f'Home_{jrsy}']['y'] = data[f'Home_{jrsy}']['y'] + list(np.repeat(np.nan, start_index))
+                        data[f'Home_{jrsy}']['x'] += list(np.repeat(np.nan, start_index))
+                        data[f'Home_{jrsy}']['y'] += list(np.repeat(np.nan, start_index))
 
-                # add as many nan at the start as required by difference in start indeces
-                data[f'Home_{jrsy}']['x'] = data[f'Home_{jrsy}']['x'] + list(
-                    np.repeat(np.nan, start_index_player - start_index))
-                data[f'Home_{jrsy}']['y'] = data[f'Home_{jrsy}']['y'] + list(
-                    np.repeat(np.nan, start_index_player - start_index))
+                # add as many nan at the start as required by difference in start indices
+                data[f'Home_{jrsy}']['x'] += list(np.repeat(np.nan, start_index_player - start_index))
+                data[f'Home_{jrsy}']['y'] += list(np.repeat(np.nan, start_index_player - start_index))
+
                 # add the given data
-                for frame in frames:
-                    data[f'Home_{jrsy}']['x'].append(float(frame.get("X")))
-                    data[f'Home_{jrsy}']['y'].append(float(frame.get("Y")))
-                # add as many nan at the end as required by difference in start indeces
-                data[f'Home_{jrsy}']['x'] = data[f'Home_{jrsy}']['x'] + list(
-                    np.repeat(np.nan, end_index - end_index_player))
-                data[f'Home_{jrsy}']['y'] = data[f'Home_{jrsy}']['y'] + list(
-                    np.repeat(np.nan, end_index - end_index_player))
+                data[f'Home_{jrsy}']['x'] += [float(frame.get("X")) for frame in frames]
+                data[f'Home_{jrsy}']['y'] += [float(frame.get("Y")) for frame in frames]
+
+                # add as many nan at the end as required by difference in start indices
+                data[f'Home_{jrsy}']['x'] += list(np.repeat(np.nan, end_index - end_index_player))
+                data[f'Home_{jrsy}']['y'] += list(np.repeat(np.nan, end_index - end_index_player))
 
             # away team player?
             elif frame_set.get("PersonId") in links_pID_to_jID["Away"]:
@@ -150,22 +148,18 @@ def parse_dfl_pos_data(pos_filepath, mi_filepath, fps=25, print_info=False):
                     data[f'Away_{jrsy}']['y'] = []
                     # if player starts in second half we need to add nans for first half as well
                     if segment == 'secondHalf':
-                        data[f'Away_{jrsy}']['x'] = data[f'Away_{jrsy}']['x'] + list(np.repeat(np.nan, start_index))
-                        data[f'Away_{jrsy}']['y'] = data[f'Away_{jrsy}']['y'] + list(np.repeat(np.nan, start_index))
+                        data[f'Away_{jrsy}']['x'] += list(np.repeat(np.nan, start_index))
+                        data[f'Away_{jrsy}']['y'] += list(np.repeat(np.nan, start_index))
                 # add as many nan at the start as required by difference in start indeces
-                data[f'Away_{jrsy}']['x'] = data[f'Away_{jrsy}']['x'] + list(
-                    np.repeat(np.nan, start_index_player - start_index))
-                data[f'Away_{jrsy}']['y'] = data[f'Away_{jrsy}']['y'] + list(
-                    np.repeat(np.nan, start_index_player - start_index))
+                data[f'Away_{jrsy}']['x'] += list(np.repeat(np.nan, start_index_player - start_index))
+                data[f'Away_{jrsy}']['y'] += list(np.repeat(np.nan, start_index_player - start_index))
                 # add the given data
-                for frame in frames:
-                    data[f'Away_{jrsy}']['x'].append(float(frame.get("X")))
-                    data[f'Away_{jrsy}']['y'].append(float(frame.get("Y")))
+                data[f'Away_{jrsy}']['x'] += [float(frame.get("X")) for frame in frames]
+                data[f'Away_{jrsy}']['y'] += [float(frame.get("Y")) for frame in frames]
+
                 # add as many nan at the end as required by difference in start indeces
-                data[f'Away_{jrsy}']['x'] = data[f'Away_{jrsy}']['x'] + list(
-                    np.repeat(np.nan, end_index - end_index_player))
-                data[f'Away_{jrsy}']['y'] = data[f'Away_{jrsy}']['y'] + list(
-                    np.repeat(np.nan, end_index - end_index_player))
+                data[f'Away_{jrsy}']['x'] += list(np.repeat(np.nan, end_index - end_index_player))
+                data[f'Away_{jrsy}']['y'] += list(np.repeat(np.nan, end_index - end_index_player))
 
     flat_data = flatdict.FlatDict(data, delimiter='_')
     flat_data.keys()
