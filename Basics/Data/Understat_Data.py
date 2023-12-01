@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import pandas as pd
+import time
 
 
 # -----------------------------------------------------
@@ -40,38 +41,22 @@ def scrape_match_shots(match_id='23092'):
     data_home = data['h']
 
     for index in range(len(data_home)):  # indexes are h and a
-        for key in data_home[index]:  # key = list element
-            if key == 'X':
-                x.append(data_home[index][key])
-            if key == 'Y':
-                y.append(data_home[index][key])
-            if key == 'xG':
-                xG.append(data_home[index][key])
-            if key == 'minute':
-                minute.append(data_home[index][key])
-            if key == 'h_team':
-                team.append(data_home[index][key])
-            if key == 'result':
-                result.append(data_home[index][key])
-            if key == 'player':
-                player.append(data_home[index][key])
+        x += [data_home[index][key] for key in data_home[index] if key == 'X']
+        y += [data_home[index][key] for key in data_home[index] if key == 'Y']
+        xG += [data_home[index][key] for key in data_home[index] if key == 'xG']
+        minute += [data_home[index][key] for key in data_home[index] if key == 'minute']
+        team += [data_home[index][key] for key in data_home[index] if key == 'h_team']
+        player += [data_home[index][key] for key in data_home[index] if key == 'player']
+        result += [data_home[index][key] for key in data_home[index] if key == 'result']
 
     for index in range(len(data_away)):  # indexes are h and a
-        for key in data_away[index]:  # key = list element
-            if key == 'X':
-                x.append(data_away[index][key])
-            if key == 'Y':
-                y.append(data_away[index][key])
-            if key == 'xG':
-                xG.append(data_away[index][key])
-            if key == 'minute':
-                minute.append(data_away[index][key])
-            if key == 'a_team':
-                team.append(data_away[index][key])
-            if key == 'result':
-                result.append(data_away[index][key])
-            if key == 'player':
-                player.append(data_away[index][key])
+        x += [data_away[index][key] for key in data_away[index] if key == 'X']
+        y += [data_away[index][key] for key in data_away[index] if key == 'Y']
+        xG += [data_away[index][key] for key in data_away[index] if key == 'xG']
+        minute += [data_away[index][key] for key in data_away[index] if key == 'minute']
+        team += [data_away[index][key] for key in data_away[index] if key == 'h_team']
+        player += [data_away[index][key] for key in data_away[index] if key == 'player']
+        result += [data_away[index][key] for key in data_away[index] if key == 'result']
 
     # create the actual data frame
     col_names = ['x', 'y', 'xG', 'minute', 'team', 'player', 'result']
@@ -123,7 +108,7 @@ def scrape_team_Data(team='Union_Berlin', season='2023', by='situation', out_as=
 # shot data by player for an entire team
 # --------------------------------------
 
-def scrape_player_Data(team='Union_Berlin', year='2023', out_as='df'):
+def scrape_player_Data(team='Union_Berlin', season='2023', out_as='df'):
     base_url = 'https://understat.com/team/'
     url = base_url + team + '/' + season
 
