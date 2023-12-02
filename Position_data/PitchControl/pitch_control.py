@@ -179,7 +179,12 @@ class player:
         return position, inframe
 
     def get_velocity(self):
-        if self.player_name + '_vx' not in self.org_data.columns:
+        if self.frame is None:
+            if self.player_name + '_vx' not in self.org_data.columns:
+                raise ValueError('The td_object from which the player was generated did not include velocities. '
+                                 'Calculate velocities via the td_object get_velocities function and then '
+                                 'reinitialize the player.')
+        elif self.player_name + '_vx' not in self.org_data.index:
             raise ValueError('The td_object from which the player was generated did not include velocities. '
                              'Calculate velocities via the td_object get_velocities function and then '
                              'reinitialize the player.')
@@ -848,6 +853,7 @@ def plot_tensor_pitch_control(td_object, frame, pitch_control=None, version='Spe
             raise ValueError(f'{version} is not a valid version. Chose either "Fernandez" or "Spearman"')
 
     if pitch_control is None:
+        print('Modelling pitch control...')
         pitch_control = tensor_pitch_control(td_object=td_object, version=version, jitter=jitter, pos_nan_to=pos_nan_to,
                                              vel_nan_to=vel_nan_to, remove_first_frames=remove_first_frames,
                                              reaction_time=reaction_time, max_player_speed=max_player_speed,
@@ -856,7 +862,8 @@ def plot_tensor_pitch_control(td_object, frame, pitch_control=None, version='Spe
                                              device=device, dtype=dtype, first_frame=first_frame, last_frame=last_frame,
                                              batch_size=batch_size, deg=deg, implementation=implementation,
                                              max_int=max_int)
-    if len(pitch_control.shape):
+    # if Fernandez we need to adapt dimensions of pc tensor
+    if version == 'Fernandez':
         pitch_control = pitch_control.reshape(pitch_control.shape[0], n_grid_points_y, n_grid_points_x)
 
     # determine colormap
@@ -977,7 +984,7 @@ def animate_tensor_pitch_control(td_object, version='Spearman', pitch_control=No
                                              dtype=dtype, first_frame=first_frame_calc, last_frame=last_frame_calc,
                                              batch_size=batch_size, deg=deg, implementation=implementation,
                                              max_int=max_int)
-    if len(pitch_control.shape):
+    if version == 'Fernandez':
         pitch_control = pitch_control.reshape(pitch_control.shape[0], n_grid_points_y, n_grid_points_x)
 
     if progress_steps is not None:
