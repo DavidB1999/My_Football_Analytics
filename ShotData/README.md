@@ -105,7 +105,7 @@ A simple utility function to calculate the number of expected goals for a team a
                         result_text=True, result_text_x=None, result_text_y=None,
                         name_text=True, name_text_x=None, name_text_y=None,
                         home_image=None, away_image=None, logo_x=None, logo_y=None,
-                        axis_visible=False)
+                        axis_visible=False, pitch_path='')
 
 **Parameters** 
 
@@ -113,7 +113,7 @@ A simple utility function to calculate the number of expected goals for a team a
 + *pitch_type (str)* - type of pitch used for the shotmap; currently supported are 'myPitch' (custom) and 'mplsoccer'
 + *background_col* - color for the background around the shotmap
 + *pitch_x0* and *pitch_y0 (float)* - offset to the pitch (image) location on the plot to ensure the pitch to align with coordinates
-+ *size_multiplicator (float)* - Used to multiplicate pitch size to increase figure size while maintaining aspect ratio
++ *size_multiplicator (float)* - Used to multiply pitch size to increase figure size while maintaining aspect ratio
 + *title (str)* - Title to be displayed at the top
 + *title_col* - Color of the title
 + *xg_text*, *result_text* and *name_text (boolean)* - Boolean indicating whether xG-score, final score and team names are supposed to be displayed
@@ -121,6 +121,7 @@ A simple utility function to calculate the number of expected goals for a team a
 + *home_image* and *away_image (str)* - path to the teams' logos if to be displayed; if *None*, no logos will be displayed
 + *logo_x* and *logo_y (float)* - logos' x and y coordinates as fraction of the pitch limits; if *None* they will be placed based on pitch_type selectio
 + *axis_visible (boolean)* - Boolean indicating whether axis are to be displayed
++ *pitch_path (str)* - Optional path (folder) to be added to the default saving path ('pitch.png'); Folder needs to exist and optional path needs to be suffixed by '/'
 
 **Returns**
 

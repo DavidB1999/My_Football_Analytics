@@ -127,7 +127,6 @@ class shot_data:
         self.filter1 = data[self.team_column] == self.home_team
         self.filter2 = data[self.team_column] == self.away_team
 
-
         # on initializing the data is rescaled, but I can always initialize again based on org_data!
         self.data = self.rescale_shot_data()
 
@@ -161,13 +160,9 @@ class shot_data:
             pitchmax = self.dimensions[dim]['pitch'][1]
             delta_pitch = pitchmax - pitchmin
             self.dimensions[dim]['delta_pitch'] = delta_pitch
-
-            # print(delta_data, delta_pitch)
             self.dimensions[dim]['scaling_factor'] = delta_pitch / delta_data
-            # print(scaling_factor)
-            # print(data0)
-            # print(data1)
-        #print(dimensions)
+
+        # print(self.dimensions)
 
         # this works without data_source being supplied but this nevertheless
         # requires a format similar to understat shot data
@@ -183,15 +178,18 @@ class shot_data:
             for dim in self.dimensions.keys():
                 # rescale home team coordinates
                 data.loc[self.filter1, dim] = data.loc[self.filter1, dim].apply(
-                    lambda x: self.dimensions[dim]['pitch'][0] + (x + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor'])
+                    lambda x: self.dimensions[dim]['pitch'][0] + (x + self.dimensions[dim]['data'][0] * -1) *
+                              self.dimensions[dim]['scaling_factor'])
 
                 # rescale away team and if necessary mirror
                 if dim in self.mirror_away:
                     data.loc[self.filter2, dim] = data.loc[self.filter2, dim].apply(
-                        lambda x: self.dimensions[dim]['pitch'][1] - (x + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor'])
+                        lambda x: self.dimensions[dim]['pitch'][1] - (x + self.dimensions[dim]['data'][0] * -1) *
+                                  self.dimensions[dim]['scaling_factor'])
                 else:
                     data.loc[self.filter2, dim] = data.loc[self.filter2, dim].apply(
-                        lambda x: self.dimensions[dim]['pitch'][0] + (x + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor'])
+                        lambda x: self.dimensions[dim]['pitch'][0] + (x + self.dimensions[dim]['data'][0] * -1) *
+                                  self.dimensions[dim]['scaling_factor'])
 
 
         elif self.data_source == 'Statsbomb':
@@ -201,9 +199,9 @@ class shot_data:
             team = data[self.team_column]
             result = []
             xG = []
-            for s in range(len(data)):
-                result.append(data[self.shot_column][s][self.outcome_key]['name'])
-                xG.append(float(data[self.shot_column][s][self.xg_key]))
+
+            result = [data[self.shot_column][s][self.outcome_key]['name'] for s in range(len(data))]
+            xG = [float(data[self.shot_column][s][self.xg_key]) for s in range(len(data))]
 
             # location split into separate lists for both x and y
             # loop over pass location and access both x and y
@@ -222,15 +220,18 @@ class shot_data:
             for dim in self.dimensions.keys():
                 # rescale home team coordinates
                 sd.loc[self.filter1, dim] = sd.loc[self.filter1, dim].apply(
-                    lambda x: self.dimensions[dim]['pitch'][0] + (x + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor'])
+                    lambda x: self.dimensions[dim]['pitch'][0] + (x + self.dimensions[dim]['data'][0] * -1) *
+                              self.dimensions[dim]['scaling_factor'])
 
                 # rescale away team and if necessary mirror
                 if dim in self.mirror_away:
                     sd.loc[self.filter2, dim] = sd.loc[self.filter2, dim].apply(
-                        lambda x: self.dimensions[dim]['pitch'][1] - (x + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor'])
+                        lambda x: self.dimensions[dim]['pitch'][1] - (x + self.dimensions[dim]['data'][0] * -1) *
+                                  self.dimensions[dim]['scaling_factor'])
                 else:
                     sd.loc[self.filter2, dim] = sd.loc[self.filter2, dim].apply(
-                        lambda x: self.dimensions[dim]['pitch'][0] + (x + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor'])
+                        lambda x: self.dimensions[dim]['pitch'][0] + (x + self.dimensions[dim]['data'][0] * -1) *
+                                  self.dimensions[dim]['scaling_factor'])
 
             data = sd
 
@@ -426,19 +427,18 @@ class shot_data:
                             result_text=True, result_text_x=None, result_text_y=None,
                             name_text=True, name_text_x=None, name_text_y=None,
                             home_image=None, away_image=None, logo_x=None, logo_y=None,
-                            axis_visible=False):
+                            axis_visible=False, pitch_path=''):
         supported_pitch_types = ['mplsoccer', 'myPitch']
         if self.data_source == 'Understat':
-            markers = {'SavedShot': "triangle-up", 'MissedShots': 'circle', 'BlockedShot': "triangle-down", 'Goal': 'star',
-                   'OwnGoal': 'X', 'ShotOnPost': "hexagon"}
+            markers = {'SavedShot': "triangle-up", 'MissedShots': 'circle', 'BlockedShot': "triangle-down",
+                       'Goal': 'star',
+                       'OwnGoal': 'X', 'ShotOnPost': "hexagon"}
         elif self.data_source == 'Statsbomb':
             markers = {'Saved': "triangle-up", 'Saved Off T': "triangle-up", 'Saved To Post': "triangle-up",
                        'Off T': 'circle', 'Wayward': "circle", 'Blocked': "triangle-down", 'Goal': 'star',
-                   'OwnGoal': 'X', 'Post': "hexagon"}
+                       'OwnGoal': 'X', 'Post': "hexagon"}
         # get symbols / markers in correct order based on fixed dictionary
-        symbols = []
-        for result in self.data[self.result_col].unique():
-            symbols.append(markers[result])
+        symbols = [markers[result] for result in self.data[self.result_col].unique()]
 
         # create scatter with plotly express
         fig = px.scatter(self.data, x=self.x_col, y=self.y_col, color=self.team_column,
@@ -480,9 +480,10 @@ class shot_data:
         else:
             raise ValueError(f'You have to select a valid pitch type out of {supported_pitch_types} '
                              f'so that a pitch can be plotted!')
-        fig_p.savefig('images/pitch.png', format='png', bbox_inches='tight', pad_inches=0)
+        pitch_path = pitch_path + 'pitch.png'
+        fig_p.savefig(pitch_path, format='png', bbox_inches='tight', pad_inches=0)
         # load pitch as image
-        img = Image.open('images/pitch.png')
+        img = Image.open(pitch_path)
 
         # add the image as background x and y should be subtracting the border of the pitch included in the image so
         # that 0,0 is at the corner of the actual pitch
@@ -675,7 +676,7 @@ class shot_data:
         df = pd.concat([df, extra_row_home.to_frame().T, extra_row_away.to_frame().T, extra_row_home2.to_frame().T,
                         extra_row_away2.to_frame().T], ignore_index=True)
 
-        # reattribute own goals to the scoring team
+        # re-attribute own goals to the scoring team
         if "OwnGoal" in df[self.result_col].values:
             OGs = np.where(df[self.result_col] == "OwnGoal")[0]
             for og in OGs:
