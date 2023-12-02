@@ -12,6 +12,8 @@ from PIL import Image
 import numpy as np
 import re
 import warnings
+import time
+
 
 # ------------------------------------------------------------------------
 # pass data as its own class with functions to rescale and create shot map
@@ -190,56 +192,35 @@ class pass_data():
             goal_assist = []
             receiver = []
 
-            # print(len(data))
-            for p in range(len(data)):
-                try:
-                    outcome.append(data[self.pass_column][p][self.outcome_key]['name'])
-                except:
-                    outcome.append('Complete')
-                try:
-                    type.append(data[self.pass_column][p][self.type_key]['name'])
-                except:
-                    type.append('Regular')
-                try:
-                    cross.append(data[self.pass_column][p][self.cross_key])
-                except:
-                    cross.append(False)
-                try:
-                    cutback.append(data[self.pass_column][p][self.cutback_key])
-                except:
-                    cutback.append(False)
-                try:
-                    switch.append(data[self.pass_column][p][self.switch_key])
-                except:
-                    switch.append(False)
-                try:
-                    shot_assist.append(data[self.pass_column][p][self.shot_ass_key])
-                except:
-                    shot_assist.append(False)
-                try:
-                    goal_assist.append(data[self.pass_column][p][self.goal_ass_key])
-                except:
-                    goal_assist.append(False)
-                try:
-                    receiver.append(data[self.pass_column][p][self.receiver_key]['name'])
-                except:
-                    receiver.append('None')
+            outcome += [
+                data[self.pass_column][p][self.outcome_key]['name'] if self.outcome_key in data[self.pass_column][
+                    p] else "Complete" for p in range(len(data))]
+            type += [data[self.pass_column][p][self.type_key]['name'] if self.type_key in data[self.pass_column][
+                p] else "Regular" for p in range(len(data))]
+            cross += [
+                data[self.pass_column][p][self.cross_key] if self.cross_key in data[self.pass_column][p] else False for
+                p in range(len(data))]
+            cutback += [
+                data[self.pass_column][p][self.cutback_key] if self.cutback_key in data[self.pass_column][p] else False
+                for p in range(len(data))]
+            switch += [
+                data[self.pass_column][p][self.switch_key] if self.switch_key in data[self.pass_column][p] else False
+                for p in range(len(data))]
+            shot_assist += [data[self.pass_column][p][self.shot_ass_key] if self.shot_ass_key in data[self.pass_column][
+                p] else False for p in range(len(data))]
+            goal_assist += [data[self.pass_column][p][self.goal_ass_key] if self.goal_ass_key in data[self.pass_column][
+                p] else False for p in range(len(data))]
+            receiver += [
+                data[self.pass_column][p][self.receiver_key]['name'] if self.receiver_key in data[self.pass_column][
+                    p] else False for p in range(len(data))]
 
             # start and end location split into separate lists for both x and y
             # loop over pass location and access both x and y
-            x1_org = []
-            x2_org = []
-            y1_org = []
-            y2_org = []
-
-            for p in data[self.location_column]:
-                x1_org.append(float(p[0]))
-                y1_org.append(float(p[1]))
-            for p in data[
-                self.pass_column]:  # access the dictionary stored at column 'pass' and get end_location by key
-                el = p[self.end_location_key]
-                x2_org.append(float(el[0]))
-                y2_org.append(float(el[1]))
+            x1_org = [float(p[0]) for p in data[self.location_column]]
+            y1_org = [float(p[1]) for p in data[self.location_column]]
+            # access the dictionary stored at column 'pass' and get end_location by key
+            x2_org = [float(p[self.end_location_key][0]) for p in data[self.pass_column]]
+            y2_org = [float(p[self.end_location_key][1]) for p in data[self.pass_column]]
 
             pada = pd.DataFrame(zip(player, period, minute, second, team, outcome, type, x1_org, y1_org, x2_org, y2_org,
                                     cross, cutback, switch, shot_assist, goal_assist, play_pattern, related_events,
@@ -255,15 +236,18 @@ class pass_data():
                 dim = re.sub(pattern='_.*', repl='', string=c)
                 # rescale home team coordinates
                 pada.loc[self.filter1, c] = pada.loc[self.filter1, c].apply(
-                    lambda x: self.dimensions[dim]['pitch'][0] + (x + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor'])
+                    lambda x: self.dimensions[dim]['pitch'][0] + (x + self.dimensions[dim]['data'][0] * -1) *
+                              self.dimensions[dim]['scaling_factor'])
 
                 # rescale away team and if necessary mirror
                 if dim in self.mirror_away:
                     pada.loc[self.filter2, c] = pada.loc[self.filter2, c].apply(
-                        lambda x: self.dimensions[dim]['pitch'][1] - (x + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor'])
+                        lambda x: self.dimensions[dim]['pitch'][1] - (x + self.dimensions[dim]['data'][0] * -1) *
+                                  self.dimensions[dim]['scaling_factor'])
                 else:
                     pada.loc[self.filter2, c] = pada.loc[self.filter2, c].apply(
-                        lambda x: self.dimensions[dim]['pitch'][0] + (x + self.dimensions[dim]['data'][0] * -1) * self.dimensions[dim]['scaling_factor'])
+                        lambda x: self.dimensions[dim]['pitch'][0] + (x + self.dimensions[dim]['data'][0] * -1) *
+                                  self.dimensions[dim]['scaling_factor'])
 
                 data = pada
 
@@ -359,12 +343,12 @@ class pass_data():
             if direction_of_play == 'ltr':
                 plt.arrow(x=min(self.x_range_pitch) + max(self.x_range_pitch) * pdop_x,
                           y=max(self.y_range_pitch) * pdop_y,
-                          dx=pdop_l * (max(self.x_range_pitch)-min(self.x_range_pitch)), dy=0,
+                          dx=pdop_l * (max(self.x_range_pitch) - min(self.x_range_pitch)), dy=0,
                           width=1, color='white', alpha=pdop_o)
             elif direction_of_play == 'rtl':
                 plt.arrow(x=max(self.x_range_pitch) - max(self.x_range_pitch) * pdop_x,
                           y=max(self.y_range_pitch) * pdop_y,
-                          dx=pdop_l * (max(self.x_range_pitch)-min(self.x_range_pitch)), dy=0,
+                          dx=pdop_l * (max(self.x_range_pitch) - min(self.x_range_pitch)), dy=0,
                           width=1, color='white', alpha=pdop_o)
             else:
                 raise Warning('No valid direction of play was supplied. Either specify a direction of play '
@@ -418,20 +402,20 @@ class pass_data():
             # for each player in starting XI
             for p in XI:
                 network[p] = dict()
-                pP, nP = self.get_passes(get=p, data=data)            # all passed played by p
-                network[p]['x_avg'] = pP['x_initial'].mean()          # average x of pass origin for p
-                network[p]['y_avg'] = pP['y_initial'].mean()          # average y of pass origin for p
-                network[p]['n'] = nP                                  # number of passes played by p
-                pPs, nPs = self.get_passes(get="Complete", data=pP)   # all completed passes of p
-                network[p]['n_complete'] = nPs                        # number of completed passes of p
+                pP, nP = self.get_passes(get=p, data=data)  # all passed played by p
+                network[p]['x_avg'] = pP['x_initial'].mean()  # average x of pass origin for p
+                network[p]['y_avg'] = pP['y_initial'].mean()  # average y of pass origin for p
+                network[p]['n'] = nP  # number of passes played by p
+                pPs, nPs = self.get_passes(get="Complete", data=pP)  # all completed passes of p
+                network[p]['n_complete'] = nPs  # number of completed passes of p
                 network[p]['receivers'] = {}
-                receivers = list(pP[self.receiver_key].unique())            # all players who received as pass from p
+                receivers = list(pP[self.receiver_key].unique())  # all players who received as pass from p
                 for r in receivers:
                     if r == p or r not in XI:
                         pass
                     else:
                         pR, nR = self.get_passes(get=r, data=pP, receiver_get=True)  # all passes played from p to r
-                        network[p]['receivers'][r] = nR                              # number of passes from p to r
+                        network[p]['receivers'][r] = nR  # number of passes from p to r
 
             for P, p in enumerate(XI):
                 if len(colors) < 11:
@@ -451,24 +435,26 @@ class pass_data():
                                       dx=network[r]['x_avg'] - network[p]['x_avg'],
                                       dy=network[r]['y_avg'] - network[p]['y_avg'], color=color,
                                       alpha=0.5, width=network[p]['receivers'][r] / 10, length_includes_head=True,
-                                      head_width=network[p]['receivers'][r] / 2, head_length=network[p]['receivers'][r] / 3)
+                                      head_width=network[p]['receivers'][r] / 2,
+                                      head_length=network[p]['receivers'][r] / 3)
         elif by_receive:
             for r in XI:
                 network[r] = dict()
-                rR, nR = self.get_passes(get=r, data=data, receiver_get=True, receiver_count=True)            # all passed received by r
-                network[r]['x_avg'] = rR['x_received'].mean()          # average x where r received passed
-                network[r]['y_avg'] = rR['y_received'].mean()          # average y where r received passed
-                network[r]['n'] = nR                                  # number of passes received by r
-                rRs, nRs = self.get_passes(get="Complete", data=rR, receiver_count=True)   # all completed passes to r
-                network[r]['n_complete'] = nRs                        # number of completed passes to r
+                rR, nR = self.get_passes(get=r, data=data, receiver_get=True,
+                                         receiver_count=True)  # all passed received by r
+                network[r]['x_avg'] = rR['x_received'].mean()  # average x where r received passed
+                network[r]['y_avg'] = rR['y_received'].mean()  # average y where r received passed
+                network[r]['n'] = nR  # number of passes received by r
+                rRs, nRs = self.get_passes(get="Complete", data=rR, receiver_count=True)  # all completed passes to r
+                network[r]['n_complete'] = nRs  # number of completed passes to r
                 network[r]['passers'] = {}
-                passers = list(rR[self.player_column].unique())            # all players who passed to r
+                passers = list(rR[self.player_column].unique())  # all players who passed to r
                 for p in passers:
                     if p == r or p not in XI:
                         pass
                     else:
-                        pP, nP = self.get_passes(get=p, data=rR)           # all passes received by r from p
-                        network[r]['passers'][p] = nP                      # number of passes received by r from p
+                        pP, nP = self.get_passes(get=p, data=rR)  # all passes received by r from p
+                        network[r]['passers'][p] = nP  # number of passes received by r from p
 
             for R, r in enumerate(XI):
                 if len(colors) < 11:
@@ -532,4 +518,3 @@ class pass_data():
             else:
                 n = len(data)
                 return n
-

@@ -84,7 +84,6 @@ class tracking_data:
             if self.time_col is None:
                 self.time_col = 'Time [s]'
 
-
         else:
             raise ValueError(f'You entered {self.data_source}. '
                              f'Unfortunately only {self.supported_data_sources} is/are supported at this stage.')
