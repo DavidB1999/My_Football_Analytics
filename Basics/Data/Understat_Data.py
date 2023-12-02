@@ -54,7 +54,7 @@ def scrape_match_shots(match_id='23092'):
         y += [data_away[index][key] for key in data_away[index] if key == 'Y']
         xG += [data_away[index][key] for key in data_away[index] if key == 'xG']
         minute += [data_away[index][key] for key in data_away[index] if key == 'minute']
-        team += [data_away[index][key] for key in data_away[index] if key == 'h_team']
+        team += [data_away[index][key] for key in data_away[index] if key == 'a_team']
         player += [data_away[index][key] for key in data_away[index] if key == 'player']
         result += [data_away[index][key] for key in data_away[index] if key == 'result']
 
