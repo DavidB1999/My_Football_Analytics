@@ -1,8 +1,10 @@
 import requests
+import sys
+
+sys.path.append('C:\\Users\\DavidB\\PycharmProjects\\My_Football_Analytics')
 from bs4 import BeautifulSoup
 import json
 import pandas as pd
-import time
 
 
 # -----------------------------------------------------

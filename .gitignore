@@ -10,3 +10,7 @@ ffmpeg.exe
 *.docx
 *.tmp
 *.xml
+
+CurrentState.txt
+
+PitchControlYAxis/

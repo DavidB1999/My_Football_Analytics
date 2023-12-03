@@ -1,3 +1,6 @@
+import sys
+
+sys.path.append('C:\\Users\\DavidB\\PycharmProjects\\My_Football_Analytics')
 import pandas as pd
 import numpy as np
 from statsbombpy import sb
