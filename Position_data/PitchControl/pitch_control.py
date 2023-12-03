@@ -1,8 +1,11 @@
+import sys
+
+sys.path.append('C:\\Users\\DavidB\\PycharmProjects\\My_Football_Analytics')
 import pandas as pd
 import numpy as np
-from Tracking_Data import tracking_data  # wrong here but necessary for use in notebooks
-from Pitch.My_Pitch import \
-    myPitch  # might need adaptation of path depending on whether it is used in pycharm or jupyter notebook
+from Position_data.Tracking_Data import tracking_data
+from Basics.Pitch.My_Pitch import myPitch  # might need adaptation of path depending on whether it is used in pycharm
+# or jupyter notebook
 from mplsoccer import Pitch
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -490,7 +493,7 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
         if version == 'Spearman':
             implementation = 'GL'
         elif version == 'Fernandez':
-            implementation == 'org'
+            implementation = 'org'
         else:
             raise ValueError(f'{version} is not a valid version. Chose either "Fernandez" or "Spearman"')
 
@@ -542,6 +545,10 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
                                                device=device, dtype=dtype),
                                 torch.linspace(td_object.y_range_pitch[0], td_object.y_range_pitch[1], n_grid_points_y,
                                                device=device, dtype=dtype))
+        # XX, YY = torch.meshgrid(torch.linspace(min(td_object.x_range_pitch), max(td_object.x_range_pitch), n_grid_points_x,
+        #                                        device=device, dtype=dtype),
+        #                         torch.linspace(min(td_object.y_range_pitch), max(td_object.y_range_pitch), n_grid_points_y,
+        #                                        device=device, dtype=dtype))
         target_position = torch.stack([XX, YY], 2)[None, None, :, :, :]  # all possible positions
 
         # time to intercept empty torch
@@ -730,7 +737,7 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
 
         # create tensor with zeros to be filled
         RSinv_home = torch.Tensor(s_home.shape[0], s_home.shape[1], 2, 2)
-        RSinv_away = torch.Tensor(s_home.shape[0], s_home.shape[1], 2, 2)
+        RSinv_away = torch.Tensor(s_away.shape[0], s_away.shape[1], 2, 2)
 
         # s for S matrix
         S1_home = 2 / ((1 + Srat_home) * Ri_home[:, :])
@@ -840,13 +847,13 @@ def plot_tensor_pitch_control(td_object, frame, pitch_control=None, version='Spe
         if version == 'Spearman':
             implementation = 'GL'
         elif version == 'Fernandez':
-            implementation == 'org'
+            implementation = 'org'
         else:
             raise ValueError(f'{version} is not a valid version. Chose either "Fernandez" or "Spearman"')
 
     if flip_y is None:
         if version == 'Spearman':
-            flip_y = True
+            flip_y = False
         elif version == 'Fernandez':
             flip_y = False
         else:
@@ -885,21 +892,21 @@ def plot_tensor_pitch_control(td_object, frame, pitch_control=None, version='Spe
     if version == 'Spearman':
         if flip_y:
             ax.imshow(np.flipud(pitch_control[frame_number].rot90()), extent=(
-                td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[1],
-                td_object.y_range_pitch[0]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
+                td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[0],
+                td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
         else:
             ax.imshow(np.flipud(pitch_control[frame_number].rot90()), extent=(
                 td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[0],
-                td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
+                td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0, origin='lower')
     elif version == 'Fernandez':
         if flip_y:
-            ax.imshow(np.flipud(pitch_control[frame_number]), extent=(
-                td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[1],
-                td_object.y_range_pitch[0]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
-        else:
-            ax.imshow(np.flipud(pitch_control[frame_number]), extent=(
+            ax.imshow(pitch_control[frame_number], extent=(
                 td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[0],
                 td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
+        else:
+            ax.imshow(pitch_control[frame_number], extent=(
+                td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[0],
+                td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0, origin='lower')
     else:
         raise ValueError(f'{version} is not a valid version. Chose either "Fernandez" or "Spearman"')
 
@@ -948,7 +955,7 @@ def animate_tensor_pitch_control(td_object, version='Spearman', pitch_control=No
 
     if flip_y is None:
         if version == 'Spearman':
-            flip_y = True
+            flip_y = False
         elif version == 'Fernandez':
             flip_y = False
         else:
@@ -1027,21 +1034,21 @@ def animate_tensor_pitch_control(td_object, version='Spearman', pitch_control=No
             if version == 'Spearman':
                 if flip_y:
                     PC = ax.imshow(np.flipud(pitch_control[i - 1 - first_frame_ani].rot90()), extent=(
-                        td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[1],
-                        td_object.y_range_pitch[0]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
+                        td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[0],
+                        td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
                 else:
                     PC = ax.imshow(np.flipud(pitch_control[i - 1 - first_frame_ani].rot90()), extent=(
                         td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[0],
-                        td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
+                        td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0, origin='lower')
             elif version == 'Fernandez':
                 if flip_y:
-                    PC = ax.imshow(np.flipud(pitch_control[i - 1 - first_frame_ani]), extent=(
-                        td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[1],
-                        td_object.y_range_pitch[0]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
-                else:
-                    PC = ax.imshow(np.flipud(pitch_control[i - 1 - first_frame_ani]), extent=(
+                    PC = ax.imshow(pitch_control[i - 1 - first_frame_ani], extent=(
                         td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[0],
                         td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
+                else:
+                    PC = ax.imshow(pitch_control[i - 1 - first_frame_ani], extent=(
+                        td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[0],
+                        td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0, origin='lower')
             else:
                 raise ValueError(f'{version} is not a valid version. Chose either "Fernandez" or "Spearman"')
             figobjs.append(PC)

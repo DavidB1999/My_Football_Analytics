@@ -4,7 +4,9 @@
 
 # metrica pitch from Laurie Shaw has its origin in the middle of the pitch!
 
+import sys
 
+sys.path.append('C:\\Users\\DavidB\\PycharmProjects\\My_Football_Analytics')
 import numpy as np
 import matplotlib.pyplot as plt
 def plot_pitch(field_dimen=(106.0, 68.0), field_color='green', linewidth=2, markersize=20):

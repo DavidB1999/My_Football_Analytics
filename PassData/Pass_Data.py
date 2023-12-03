@@ -1,9 +1,12 @@
+import sys
+
+sys.path.append('C:\\Users\\DavidB\\PycharmProjects\\My_Football_Analytics')
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from mplsoccer import Pitch
-from Pitch.My_Pitch import \
-    myPitch  # might need adaptation of path depending on whether it is used in pycharm or jupyter notebook
+from Basics.Pitch.My_Pitch import myPitch  # might need adaptation of path depending on whether it is used in pycharm
+# or jupyter notebook
 import matplotlib.image as mpimg
 from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationBbox
 import plotly.express as px
@@ -12,7 +15,6 @@ from PIL import Image
 import numpy as np
 import re
 import warnings
-import time
 
 
 # ------------------------------------------------------------------------

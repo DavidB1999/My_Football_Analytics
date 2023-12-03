@@ -1,5 +1,8 @@
 # This scripts entails different functions to access data from FBref.
 
+import sys
+
+sys.path.append('C:\\Users\\DavidB\\PycharmProjects\\My_Football_Analytics')
 from bs4 import BeautifulSoup
 import requests
 import pandas as pd

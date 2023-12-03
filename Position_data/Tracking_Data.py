@@ -1,7 +1,10 @@
+import sys
+
+sys.path.append('C:\\Users\\DavidB\\PycharmProjects\\My_Football_Analytics')
 import pandas as pd
 import numpy as np
-from Pitch.My_Pitch import \
-    myPitch  # might need adaptation of path depending on whether it is used in pycharm or jupyter notebook
+from Basics.Pitch.My_Pitch import myPitch  # might need adaptation of path depending on whether it is used in pycharm
+# or jupyter notebook
 from mplsoccer import Pitch
 import matplotlib.pyplot as plt
 import scipy.signal as signal

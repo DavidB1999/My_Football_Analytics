@@ -3,6 +3,9 @@
 # -------------------------
 # import necessary packages
 # -------------------------
+import sys
+
+sys.path.append('C:\\Users\\DavidB\\PycharmProjects\\My_Football_Analytics')
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
