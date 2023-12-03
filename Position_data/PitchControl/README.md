@@ -336,7 +336,7 @@ Function to plot players and pitch control a pitch. Uses the *plot_players* from
 + *max_int (int)* - maximal interval length for integration method
 + *cmap (str)* - color map used for the pitch control visualization
 + *velocities (boolean)* - Whether velocities are supposed to be displayed
-+ *flip_y (boolean)* - Indicates whether the pitch control grid needs to be flipped on y-axis. 
++ *flip_y (boolean)* - Not recommended. Flips the pitch control on y-axis. Can be a quick fix if pitch control is on its head 
 + *team (str)* - "Team-perspective" for pitch control modeling - Either "Home" or "Away"
 
 
@@ -396,7 +396,7 @@ Function to create an animation of player and ball position and pitch control ov
 + *implementation (str)* - Computation version. So far the Gauss-Legendre quadrature ('GL') version and a classical integration version are included for Spearman. For Fernandez his original approach ('org') and adaption for spaces far away from all players are included ('adap')
 + *cmap (str)* - color map used for the pitch control visualization
 + *velocities (boolean)* - Whether velocities are supposed to be displayed
-+ *flip_y (boolean)* - Indicates whether the pitch control grid needs to be flipped on y-axis. 
++ *flip_y (boolean)* - Not recommended. Flips the pitch control on y-axis. Can be a quick fix if pitch control is on its head 
 + *progress_steps (list, float)* - percentages (in decimals) to be displayed as progress steps; if None no progress will be displayed
 + *frames_per_second (int)* - frames per second to assume when generating the movie. Default is 25.
 + *fpath (str)* - Directory to save the Clip. If None Clip will be stored in current directory.
