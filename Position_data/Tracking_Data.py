@@ -240,7 +240,7 @@ class tracking_data:
             # get x and y values
             x_values = plot_data[self.dimensions[self.x_cols_pattern][''.join([team, '_columns'])]].astype('float')
             y_values = plot_data[self.dimensions[self.y_cols_pattern][''.join([team, '_columns'])]].astype('float')
-            ax.scatter(x=x_values, y=y_values, s=20, c=color)
+            ax.scatter(x=x_values, y=y_values, s=20, c=color, zorder=2.5)
             if velocities and team != 'ball':
                 vx_columns = ['{}_vx'.format(c[:-2]) for c in list(self.dimensions[self.x_cols_pattern][''.join(
                     [team, '_columns'])])]  # column header for player x positions

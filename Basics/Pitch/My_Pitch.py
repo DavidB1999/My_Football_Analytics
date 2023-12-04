@@ -40,7 +40,7 @@ class myPitch:
         # kwargs which are used to configure the plot with default values 1.5 and 0.
         # all the other kwargs will be just passed to all the plot functions.
         linewidth = kwargs.pop("linewidth", 1.5)
-        zorder = kwargs.pop("zorder", 0)
+        #zorder = kwargs.pop("zorder", 0)
 
         # check whether an axes to plot is given or if a new axes element has to be created
         ax = ax or plt.subplots()[1]
