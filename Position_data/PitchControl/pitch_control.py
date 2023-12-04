@@ -946,6 +946,8 @@ def animate_tensor_pitch_control(td_object, version='Spearman', pitch_control=No
         data = data.iloc[first_frame_ani - 1: last_frame_ani]
     index = data.index
     index_range = last_frame_ani - first_frame_ani
+    print(index)
+    print(index_range)
 
     # determine colormap
     if cmap is None:
@@ -1009,20 +1011,20 @@ def animate_tensor_pitch_control(td_object, version='Spearman', pitch_control=No
             figobjs = []  # this is used to collect up all the axis objects so that they can be deleted after each iteration
             if version == 'Spearman':
                 if flip_y:
-                    PC = ax.imshow(np.flipud(pitch_control[i - 1 - first_frame_ani].rot90()), extent=(
+                    PC = ax.imshow(np.flipud(pitch_control[i - 1 - first_frame_calc].rot90()), extent=(
                         td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[0],
                         td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
                 else:
-                    PC = ax.imshow(np.flipud(pitch_control[i - 1 - first_frame_ani].rot90()), extent=(
+                    PC = ax.imshow(np.flipud(pitch_control[i - 1 - first_frame_calc].rot90()), extent=(
                         td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[0],
                         td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0, origin='lower')
             elif version == 'Fernandez':
                 if flip_y:
-                    PC = ax.imshow(pitch_control[i - 1 - first_frame_ani], extent=(
+                    PC = ax.imshow(pitch_control[i - 1 - first_frame_calc], extent=(
                         td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[0],
                         td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
                 else:
-                    PC = ax.imshow(pitch_control[i - 1 - first_frame_ani], extent=(
+                    PC = ax.imshow(pitch_control[i - 1 - first_frame_calc], extent=(
                         td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[0],
                         td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0, origin='lower')
             else:
