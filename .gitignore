@@ -14,3 +14,5 @@ ffmpeg.exe
 CurrentState.txt
 
 PitchControlYAxis/
+
+__pycache__/
