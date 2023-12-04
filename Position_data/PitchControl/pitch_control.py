@@ -545,10 +545,7 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
                                                device=device, dtype=dtype),
                                 torch.linspace(td_object.y_range_pitch[0], td_object.y_range_pitch[1], n_grid_points_y,
                                                device=device, dtype=dtype))
-        # XX, YY = torch.meshgrid(torch.linspace(min(td_object.x_range_pitch), max(td_object.x_range_pitch), n_grid_points_x,
-        #                                        device=device, dtype=dtype),
-        #                         torch.linspace(min(td_object.y_range_pitch), max(td_object.y_range_pitch), n_grid_points_y,
-        #                                        device=device, dtype=dtype))
+
         target_position = torch.stack([XX, YY], 2)[None, None, :, :, :]  # all possible positions
 
         # time to intercept empty torch
@@ -567,32 +564,21 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
             wi = torch.tensor(wi, device=device, dtype=dtype)
 
             # loop over batches needed to cover all frames
-            for b in range(int(n_frames / batch_size)):
-                print(f'Current batch: {b + 1}/{int(n_frames / batch_size)}')
+            for b in range(int(np.ceil(n_frames / batch_size))):
+                print(f'Current batch: {b + 1}/{int(np.ceil(n_frames / batch_size))}')
                 # convert all arrays to tensors!
-                bp = torch.tensor(
-                    Ball_array[:, (first_frame + b * batch_size):(np.minimum(first_frame + (b + 1) * batch_size,
-                                                                             int(first_frame + n_frames)))],
-                    device=device, dtype=dtype)
-                hp = torch.tensor(
-                    Home_array[:, (first_frame + b * batch_size):(np.minimum(first_frame + (b + 1) * batch_size,
-                                                                             int(first_frame + n_frames)))],
-                    device=device, dtype=dtype)
-                ap = torch.tensor(
-                    Away_array[:, (first_frame + b * batch_size):(np.minimum(first_frame + (b + 1) * batch_size,
-                                                                             int(first_frame + n_frames)))],
-                    device=device, dtype=dtype)
-                hv = torch.tensor(
-                    Home_vel_array[:, (first_frame + b * batch_size):(np.minimum(first_frame + (b + 1) * batch_size,
-                                                                                 int(first_frame + n_frames)))],
-                    device=device, dtype=dtype)
-                av = torch.tensor(
-                    Away_vel_array[:, (first_frame + b * batch_size):(np.minimum(first_frame + (b + 1) * batch_size,
-                                                                                 int(first_frame + n_frames)))],
-                    device=device, dtype=dtype)
+                # first frame in the batch
+                f0 = first_frame + b * batch_size
+                # last frame in the batch
+                fn = np.minimum(first_frame + (b + 1) * batch_size, int(first_frame + n_frames))
+                fd = fn - f0
+                bp = torch.tensor(Ball_array[:, f0:fn], device=device, dtype=dtype)
+                hp = torch.tensor(Home_array[:, f0:fn], device=device, dtype=dtype)
+                ap = torch.tensor(Away_array[:, f0:fn], device=device, dtype=dtype)
+                hv = torch.tensor(Home_vel_array[:, f0:fn], device=device, dtype=dtype)
+                av = torch.tensor(Away_vel_array[:, f0:fn], device=device, dtype=dtype)
 
                 ball_travel_time = torch.norm(target_position - bp, dim=4).div_(average_ball_speed)
-
                 r_reaction_home = hp + hv.mul_(reaction_time)  # position after reaction time (vector)
                 r_reaction_away = ap + av.mul_(reaction_time)  # = position + velocity multiplied by reaction time
                 r_reaction_home = r_reaction_home - target_position  # distance to target position (vector)
@@ -607,8 +593,8 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
                     reaction_time).div_(
                     max_player_speed)
 
-                tmp2[..., 0] = exp * (ball_travel_time - tti)
-                tmp1 = exp * 0.5 * (ti + 1) * 10 + tmp2
+                tmp2[:, :fd, :, :, 0] = exp * (ball_travel_time - tti[:, :ball_travel_time.shape[1]])
+                tmp1 = exp * 0.5 * (ti + 1) * 10 + tmp2[:, :fd, :, :, :]
                 if team == 'Home':
                     hh = torch.sigmoid(tmp1[:h_players]).mul_(lamb)
                 elif team == 'Away':
@@ -617,8 +603,8 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
                     raise ValueError(f'team needs to be either "Home" or "Away". {team} is not valid')
 
                 h = hh.sum(0)
+                S = torch.exp(-lamb * torch.sum(softplus(tmp1) - softplus(tmp2[:, :fd, :, :, :]), dim=0).div_(exp))
 
-                S = torch.exp(-lamb * torch.sum(softplus(tmp1) - softplus(tmp2), dim=0).div_(exp))
                 # fill pitch control tensor
                 pc[(0 + b * batch_size):(
                     np.minimum(0 + (b + 1) * batch_size, int(0 + n_frames)))] = torch.matmul(S * h, wi).mul_(5.)
@@ -628,32 +614,22 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
             relu = torch.nn.ReLU()
             dt = 1 / td_object.fps
             # loop over batches needed to cover all frames
-            for b in range(int(n_frames / batch_size)):
-                print(f'Current batch: {b + 1}/{int(n_frames / batch_size)}')
+            for b in range(int(np.ceil(n_frames / batch_size))):
+                print(f'Current batch: {b + 1}/{int(np.ceil(n_frames / batch_size))}')
                 # convert all arrays to tensors!
-                bp = torch.tensor(
-                    Ball_array[:, (first_frame + b * batch_size):(np.minimum(first_frame + (b + 1) * batch_size,
-                                                                             int(first_frame + n_frames)))],
-                    device=device, dtype=dtype)
-                hp = torch.tensor(
-                    Home_array[:, (first_frame + b * batch_size):(np.minimum(first_frame + (b + 1) * batch_size,
-                                                                             int(first_frame + n_frames)))],
-                    device=device, dtype=dtype)
-                ap = torch.tensor(
-                    Away_array[:, (first_frame + b * batch_size):(np.minimum(first_frame + (b + 1) * batch_size,
-                                                                             int(first_frame + n_frames)))],
-                    device=device, dtype=dtype)
-                hv = torch.tensor(
-                    Home_vel_array[:, (first_frame + b * batch_size):(np.minimum(first_frame + (b + 1) * batch_size,
-                                                                                 int(first_frame + n_frames)))],
-                    device=device, dtype=dtype)
-                av = torch.tensor(
-                    Away_vel_array[:, (first_frame + b * batch_size):(np.minimum(first_frame + (b + 1) * batch_size,
-                                                                                 int(first_frame + n_frames)))],
-                    device=device, dtype=dtype)
+                # first frame in the batch
+                f0 = first_frame + b * batch_size
+                # last frame in the batch
+                fn = np.minimum(first_frame + (b + 1) * batch_size, int(first_frame + n_frames))
+                fd = fn - f0
+                bp = torch.tensor(Ball_array[:, f0:fn], device=device, dtype=dtype)
+                hp = torch.tensor(Home_array[:, f0:fn], device=device, dtype=dtype)
+                ap = torch.tensor(Away_array[:, f0:fn], device=device, dtype=dtype)
+                hv = torch.tensor(Home_vel_array[:, f0:fn], device=device, dtype=dtype)
+                av = torch.tensor(Away_vel_array[:, f0:fn], device=device, dtype=dtype)
 
                 ball_travel_time = torch.norm(target_position - bp, dim=4).div_(average_ball_speed)
-
+                print(ball_travel_time.shape)
                 r_reaction_home = hp + hv.mul_(reaction_time)  # position after reaction time (vector)
                 r_reaction_away = ap + av.mul_(reaction_time)  # = position + velocity multiplied by reaction time
                 r_reaction_home = r_reaction_home - target_position  # distance to target position (vector)
@@ -674,7 +650,7 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
                     if torch.min(sumy) > 0.99:  # convergence
                         break
                     # added relu to tackle infinite negative due to infinite large sumy!
-                    y += dt * lamb * relu(1. - sumy) * 1. / (1. + torch.exp(-exp * (dt * tt + ball_travel_time - tti)))
+                    y += dt * lamb * relu(1. - sumy) * 1. / (1. + torch.exp(-exp * (dt * tt + ball_travel_time - tti[:, :ball_travel_time.shape[1]])))
 
                 if team == 'Home':
                     pc[(first_frame + b * batch_size):
@@ -775,8 +751,8 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
         # all target locations for all frames
         pitch_control = torch.Tensor(n_frames, xy_query.shape[0])
 
-        for b in range(int(n_frames / batch_size)):
-            print(f'Current batch: {b + 1}/{int(n_frames / batch_size)}')
+        for b in range(int(np.ceil(n_frames / batch_size))):
+            print(f'Current batch: {b + 1}/{int(np.ceil(n_frames / batch_size))}')
             # HOME
             # substract means from query points = p-mu
             # but this is mu - p
@@ -970,6 +946,8 @@ def animate_tensor_pitch_control(td_object, version='Spearman', pitch_control=No
         data = data.iloc[first_frame_ani - 1: last_frame_ani]
     index = data.index
     index_range = last_frame_ani - first_frame_ani
+    print(index)
+    print(index_range)
 
     # determine colormap
     if cmap is None:
@@ -1033,20 +1011,20 @@ def animate_tensor_pitch_control(td_object, version='Spearman', pitch_control=No
             figobjs = []  # this is used to collect up all the axis objects so that they can be deleted after each iteration
             if version == 'Spearman':
                 if flip_y:
-                    PC = ax.imshow(np.flipud(pitch_control[i - 1 - first_frame_ani].rot90()), extent=(
+                    PC = ax.imshow(np.flipud(pitch_control[i - 1 - first_frame_calc].rot90()), extent=(
                         td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[0],
                         td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
                 else:
-                    PC = ax.imshow(np.flipud(pitch_control[i - 1 - first_frame_ani].rot90()), extent=(
+                    PC = ax.imshow(np.flipud(pitch_control[i - 1 - first_frame_calc].rot90()), extent=(
                         td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[0],
                         td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0, origin='lower')
             elif version == 'Fernandez':
                 if flip_y:
-                    PC = ax.imshow(pitch_control[i - 1 - first_frame_ani], extent=(
+                    PC = ax.imshow(pitch_control[i - 1 - first_frame_calc], extent=(
                         td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[0],
                         td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0)
                 else:
-                    PC = ax.imshow(pitch_control[i - 1 - first_frame_ani], extent=(
+                    PC = ax.imshow(pitch_control[i - 1 - first_frame_calc], extent=(
                         td_object.x_range_pitch[0], td_object.x_range_pitch[1], td_object.y_range_pitch[0],
                         td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0, origin='lower')
             else:
