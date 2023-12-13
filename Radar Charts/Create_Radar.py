@@ -151,3 +151,46 @@ def create_radar_plotly(df1, player1, df2=None, player2=None, lines=False, var_c
         )
     )
     return fig
+
+
+class Radar:
+
+    # class with all necessary methods
+    def __init__(self, background_col='#1f142a', circle_col1='#1f142a', circle_col2='#1f142a',
+                 fontfamily='Liberation Serif', label_fontsize=10, range_fontsize=6.5, label_color='#efeef0'):
+
+        self.background_col = background_col
+        self.circle_col1 = circle_col1
+        self.circle_col2 = circle_col2
+        self.ff = fontfamily
+        self.lbfs = label_fontsize
+        self.lbcol = label_color
+        self.rgfs = range_fontsize
+
+        def plot_radar(self, ranges, params, values, radar_color, alphas, title=dict(), compare=False,
+                       endnote=None, end_size=9, end_color='#efeef0'):
+
+            ## assert required conditions
+            assert len(ranges) >= 3, "Length of ranges should be greater than equal to 3"
+            assert len(params) >= 3, "Length of params should be greater than equal to 3"
+
+            if compare:
+                ## for making comparison radar charts
+                assert len(values) == len(radar_color) == len(
+                    alphas), "Length for values, radar_color and alpha do not match"
+            else:
+                assert len(values) >= 3, "Length of values should be greater than equal to 3"
+                assert len(ranges) == len(params) == len(values), "Length for ranges, params and values not match"
+
+            fig, ax = plt.subplots(figsize=(20, 10), facecolor=self.background_col)
+            ax.set_facecolor(self.background_col)
+
+            # what is the point?!
+            ## set axis
+            # ax.set_aspect('equal')
+            # ax.set(xlim=(-22, 22), ylim=(-23, 25))
+
+            if type(radar_color) == str:
+                ## make radar_color a list
+                radar_color = [radar_color]
+                radar_color.append('#D6D6D6') # light grey
