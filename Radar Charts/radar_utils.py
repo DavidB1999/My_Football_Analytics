@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 
 def get_label_coordinates(n):
@@ -20,7 +21,23 @@ def get_label_coordinates(n):
     return np.c_[coord_x, coord_y, alphas]
 
 
-def get_radar_coord():
+def get_radar_coord(values, radius, ranges, rot):
     """
     Function to get the coordinates of the radar area vertices (for the polygons)
     """
+    radius += 1
+    xy = [[radius * ((v - rg[0]) / (rg[1] - rg[0])) * np.cos(rt),
+           radius * ((v - rg[0]) / (rg[1] - rg[0])) * np.sin(rt)] for v, rg, rt in zip(values, ranges, rot)]
+
+    return xy
+
+
+def param_select(df, params, var_col='Variables'):
+    df_new = df[df[var_col].isin(params)]  # select columns of interest
+
+    # merge with column of parameters in correct order
+    # to ensure data is sorted by the order of parameters selected
+    dummy = pd.Series(params, name=var_col).to_frame()
+    df_new = pd.merge(dummy, df_new, on=var_col, how='left')
+
+    return df_new

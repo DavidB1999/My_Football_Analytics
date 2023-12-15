@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly
+import radar_utils as ru
+from matplotlib.patches import Polygon
+from matplotlib import patches
 
 
 # -------------------------------------------------------------------
@@ -156,41 +159,153 @@ def create_radar_plotly(df1, player1, df2=None, player2=None, lines=False, var_c
 class Radar:
 
     # class with all necessary methods
-    def __init__(self, background_col='#1f142a', circle_col1='#1f142a', circle_col2='#1f142a',
-                 fontfamily='Liberation Serif', label_fontsize=10, range_fontsize=6.5, label_color='#efeef0'):
+    def __init__(self,
+                 background_col='#1f142a', wedge_cols=['#1f142a', '#675E71'], radar_cols=['#675E71', 'green'],
+                 fontfamily='Liberation Serif', label_fontsize=10, label_col='#efeef0',
+                 range_fontsize=8, range_col='#efeef0',
+                 title_size=15, title_weight='bold', title_col='#274e13',
+                 subtitle_size=12, subtitle_weight='bold', subtitle_col='#274e13',
+                 pos_title_size=10, pos_title_weight='regular', pos_title_col='#274e13',
+                 title_size_2=15, title_weight_2='bold', title_col_2='#4e1327',
+                 subtitle_size_2=12, subtitle_weight_2='bold', subtitle_col_2='#4e1327',
+                 pos_title_size_2=10, pos_title_weight_2='regular', pos_title_col_2='#4e1327',
+                 endnote='Inspired by Statsbomb | Adapted from soccerplots',
+                 endnote_size=10, endnote_weight='regular', endnote_col='#efeef0', y_endnote=-13,
+                 radii=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], polygon_alpha=0.6):
 
         self.background_col = background_col
-        self.circle_col1 = circle_col1
-        self.circle_col2 = circle_col2
+        self.wedge_cols = wedge_cols
+        self.radar_cols = radar_cols
         self.ff = fontfamily
         self.lbfs = label_fontsize
-        self.lbcol = label_color
+        self.lbcol = label_col
         self.rgfs = range_fontsize
+        self.rgcol = range_col
+        self.ts = title_size
+        self.tw = title_weight
+        self.tcol = title_col
+        self.sts = subtitle_size
+        self.stw = subtitle_weight
+        self.stcol = subtitle_col
+        self.pts = pos_title_size
+        self.ptw = pos_title_weight
+        self.ptcol = pos_title_col
+        self.ts2 = title_size_2
+        self.tw2 = title_weight_2
+        self.tcol2 = title_col_2
+        self.sts2 = subtitle_size_2
+        self.stw2 = subtitle_weight_2
+        self.stcol2 = subtitle_col_2
+        self.pts2 = pos_title_size_2
+        self.ptw2 = pos_title_weight_2
+        self.ptcol2 = pos_title_col_2
+        self.endnote = endnote
+        self.es = endnote_size
+        self.ew = endnote_weight
+        self.ecol = endnote_col
+        self.y_end = y_endnote
+        self.radii = radii
+        self.pol_al = polygon_alpha
 
-        def plot_radar(self, ranges, params, values, radar_color, alphas, title=dict(), compare=False,
-                       endnote=None, end_size=9, end_color='#efeef0'):
+    def plot_empty_radar(self):
 
-            ## assert required conditions
-            assert len(ranges) >= 3, "Length of ranges should be greater than equal to 3"
-            assert len(params) >= 3, "Length of params should be greater than equal to 3"
+        # set up figure
+        fig, ax = plt.subplots(figsize=(20, 10), facecolor=self.background_col)
+        ax.set_facecolor(self.background_col)
 
-            if compare:
-                ## for making comparison radar charts
-                assert len(values) == len(radar_color) == len(
-                    alphas), "Length for values, radar_color and alpha do not match"
+        # set axis
+        ax.set_aspect('equal')
+        ax.set(xlim=(-15, 15), ylim=(-15, 15))
+
+        # max radius (i.e. outermost wedge)
+        radius = self.radii[-1]
+        ax = self.plot_wedges(ax=ax)
+
+        if self.endnote:
+            y_end = self.y_end
+            for note in self.endnote.split('\n'):
+                ax.text(14.5, y_end, note, ha='right', fontdict={"color": self.ecol}, fontsize=self.es)
+                y_end -= 0.75
+
+        ax.axis('off')
+
+        return ax
+
+
+
+    ### IDEA:
+    ### One function for overall wedges
+    ### Another function for polygons and the second wedge layer!
+    def plot_wedges(self, ax):
+
+        # zorder for wedges
+        zow = 2
+        for rad in self.radii:
+            if rad % 2 == 0:
+                wedge = patches.Wedge(center=(0, 0), r=rad + 1, theta1=0, theta2=360, width=1, color=self.wedge_cols[1],
+                                      zorder=zow)
+                ax.add_patch(wedge)
             else:
-                assert len(values) >= 3, "Length of values should be greater than equal to 3"
-                assert len(ranges) == len(params) == len(values), "Length for ranges, params and values not match"
+                wedge = patches.Wedge(center=(0, 0), r=rad + 1, theta1=0, theta2=360, width=1, color=self.wedge_cols[0],
+                                      zorder=zow)
+                ax.add_patch(wedge)
 
-            fig, ax = plt.subplots(figsize=(20, 10), facecolor=self.background_col)
-            ax.set_facecolor(self.background_col)
+        return ax
 
-            # what is the point?!
-            ## set axis
-            # ax.set_aspect('equal')
-            # ax.set(xlim=(-22, 22), ylim=(-23, 25))
+    def plot_polygons(self, ax, vertices, num_player, alpha):
 
-            if type(radar_color) == str:
-                ## make radar_color a list
-                radar_color = [radar_color]
-                radar_color.append('#D6D6D6') # light grey
+        # either all players in one go loop over players and run this function for each player
+        # handle color accordingly
+
+        zow = 2
+        radar = Polygon(vertices, fc=self.radar_cols[num_player - 1], alpha=self.pol_al)
+        ax.add_patch(radar)
+        for rad in self.radii:
+            if rad % 2 == 0:
+                wedge = patches.Wedge(center=(0, 0), r=rad + 1, theta1=0, theta2=360, width=1, color=self.radar_cols[1],
+                                      zorder=zow)
+                wedge.set_clip_path(radar)
+                ax.add_patch(wedge)
+            else:
+                wedge = patches.Wedge(center=(0, 0), r=rad + 1, theta1=0, theta2=360, width=1, color=self.radar_cols[0],
+                                      zorder=zow)
+                wedge.set_clip_path(radar)
+                ax.add_patch(wedge)
+
+        return ax
+
+    def plot_radar(self, player1, p1_data,
+                   ranges, params, values, radar_color, alphas, title=dict(), compare=False,
+                   endnote=None, end_size=9, end_color='#efeef0',
+                   player2=None, p2_data=None, ):
+
+        # assert that name and data for second player are only supplied in combination
+        if player2:
+            assert p2_data is not None, "If you supply a name for a second player you need to supply data as well"
+        elif p2_data:
+            raise Warning("If you supply data for a second player, I'd recommend giving him a name.")
+
+        # assert required conditions
+        assert len(ranges) >= 3, "Length of ranges should be greater than equal to 3"
+        assert len(params) >= 3, "Length of params should be greater than equal to 3"
+
+        if p2_data:
+            ## for making comparison radar charts
+            assert len(values) == len(radar_color) == len(
+                alphas), "Length for values, radar_color and alpha do not match"
+        else:
+            assert len(values) >= 3, "Length of values should be greater than equal to 3"
+            assert len(ranges) == len(params) == len(values), "Length for ranges, params and values not match"
+
+        fig, ax = plt.subplots(figsize=(20, 10), facecolor=self.background_col)
+        ax.set_facecolor(self.background_col)
+
+        # what is the point?!
+        ## set axis
+        # ax.set_aspect('equal')
+        # ax.set(xlim=(-22, 22), ylim=(-23, 25))
+
+        if type(radar_color) == str:
+            ## make radar_color a list
+            radar_color = [radar_color]
+            radar_color.append('#D6D6D6')  # light grey
