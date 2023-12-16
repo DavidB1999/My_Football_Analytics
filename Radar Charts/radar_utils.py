@@ -25,9 +25,9 @@ def get_radar_coord(values, radius, ranges, rot):
     """
     Function to get the coordinates of the radar area vertices (for the polygons)
     """
-    radius += 1
-    xy = [[radius * ((v - rg[0]) / (rg[1] - rg[0])) * np.cos(rt),
-           radius * ((v - rg[0]) / (rg[1] - rg[0])) * np.sin(rt)] for v, rg, rt in zip(values, ranges, rot)]
+    # need to add 1 to the distance from the center due to axis starting at 1
+    xy = [[(1 + radius * ((v - rg[0]) / (rg[1] - rg[0]))) * np.cos(rt),
+           (1 + radius * ((v - rg[0]) / (rg[1] - rg[0]))) * np.sin(rt)] for v, rg, rt in zip(values, ranges, rot)]
 
     return xy
 
