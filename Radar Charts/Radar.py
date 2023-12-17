@@ -286,8 +286,9 @@ class Radar:
         if ranges:
             pass
         elif display_type != 'Percentile':
-            raise ValueError('You need to supply ranges! A method to create them automatically is not yet included!')
-            ranges = []
+            raise ValueError('You need to supply ranges! A method to create them automatically is not yet included!'
+                             'If you you used data from FBref for the radar chart you might want to consider looking '
+                             'for per value ranges on their website.')
 
         if display_type == 'Percentile':
             values1 = percentiles1
@@ -359,6 +360,8 @@ class Radar:
 
         ax.axis('off')
 
+        return ax
+
     def add_labels(self, params, ax, radius, return_xy, labelsnotvalues=True):
         # radius = max[self.radii] + 2
         coord = ru.get_label_coordinates(n=len(params))
@@ -421,9 +424,7 @@ class Radar:
 
         return ax, np.array(xys), range_values
 
-    ### IDEA:
-    ### One function for overall wedges
-    ### Another function for polygons and the second wedge layer!
+
     def plot_wedges(self, ax):
 
         # zorder for wedges
