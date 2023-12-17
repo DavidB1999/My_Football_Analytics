@@ -326,7 +326,6 @@ class Radar:
             vertices = [vertices1, vertices2]
         else:
             vertices = ru.get_radar_coord(values=values1, radius=self.radius, ranges=ranges, rot=rotations)
-        print(vertices)
 
         ax = self.plot_wedges(ax=ax)
         ax = self.plot_polygons(ax=ax, vertices=vertices, num_players=n_players)
