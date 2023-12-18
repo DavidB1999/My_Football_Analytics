@@ -150,55 +150,90 @@ class Radar:
 
     # class with all necessary methods
     def __init__(self,
-                 background_col='#1f142a', wedge_cols=['#1f142a', '#675E71'],
-                 radar_cols=['#675E71', '#99d8bc', '#d899b5'],
-                 fontfamily='Liberation Serif', label_fontsize=10, label_col='#efeef0',
-                 range_fontsize=8, range_col='#efeef0', flip_labels=True,
-                 title_size=15, title_weight='bold', title_col='#99d8bc',
-                 subtitle_size=12, subtitle_weight='bold', subtitle_col='#99d8bc',
-                 pos_title_size=10, pos_title_weight='regular', pos_title_col='#99d8bc',
-                 title_size_2=15, title_weight_2='bold', title_col_2='#d899b5',
-                 subtitle_size_2=12, subtitle_weight_2='bold', subtitle_col_2='#d899b5',
-                 pos_title_size_2=10, pos_title_weight_2='regular', pos_title_col_2='#d899b5',
-                 endnote='Inspired by Statsbomb | Adapted from soccerplots',
-                 endnote_size=10, endnote_weight='regular', endnote_col='#efeef0', y_endnote=-13.5,
-                 radii=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], polygon_alpha=0.6, radar_cols_to_title=False):
+                 background_col=None, wedge_cols=None,radar_cols=None, fontfamily=None,
+                 label_fontsize=None, label_col=None, range_fontsize=None, range_col=None,
+                 flip_labels=None, title_size=None, title_weight=None, title_col=None,
+                 subtitle_size=None, subtitle_weight=None, subtitle_col=None,
+                 pos_title_size=None, pos_title_weight=None, pos_title_col=None,
+                 title_size_2=None, title_weight_2=None, title_col_2=None,
+                 subtitle_size_2=None, subtitle_weight_2=None, subtitle_col_2=None,
+                 pos_title_size_2=None, pos_title_weight_2=None, pos_title_col_2=None,
+                 endnote=None, endnote_size=None, endnote_weight=None, endnote_col=None, y_endnote=None,
+                 radii=None, polygon_alpha=None, radar_cols_to_title=False,
+                 style='moody'):
 
-        self.background_col = background_col
-        self.wedge_cols = wedge_cols
-        self.radar_cols = radar_cols
-        self.ff = fontfamily
-        self.lbfs = label_fontsize
-        self.lbcol = label_col
-        self.rgfs = range_fontsize
-        self.rgcol = range_col
-        self.flip_labels = flip_labels
-        self.ts = title_size
-        self.tw = title_weight
-        self.tcol = title_col
-        self.sts = subtitle_size
-        self.stw = subtitle_weight
-        self.stcol = subtitle_col
-        self.pts = pos_title_size
-        self.ptw = pos_title_weight
-        self.ptcol = pos_title_col
-        self.ts2 = title_size_2
-        self.tw2 = title_weight_2
-        self.tcol2 = title_col_2
-        self.sts2 = subtitle_size_2
-        self.stw2 = subtitle_weight_2
-        self.stcol2 = subtitle_col_2
-        self.pts2 = pos_title_size_2
-        self.ptw2 = pos_title_weight_2
-        self.ptcol2 = pos_title_col_2
-        self.endnote = endnote
-        self.es = endnote_size
-        self.ew = endnote_weight
-        self.ecol = endnote_col
-        self.y_end = y_endnote
-        self.radii = radii
-        self.radius = max(radii)
-        self.pol_al = polygon_alpha
+        if style == 'moody':
+            self.background_col = background_col if background_col else '#1f142a'
+            self.wedge_cols = wedge_cols if wedge_cols else ['#1f142a', '#675E71']
+            self.radar_cols = radar_cols if radar_cols else ['#675E71', '#99d8bc', '#d899b5']
+            self.ff = fontfamily if fontfamily else 'Liberation Serif'
+            self.lbfs = label_fontsize if label_fontsize else 10
+            self.lbcol = label_col if label_col else '#efeef0'
+            self.rgfs = range_fontsize if range_fontsize else 8
+            self.rgcol = range_col if range_col else '#efeef0'
+            self.flip_labels = flip_labels if flip_labels else True
+            self.ts = title_size if title_size else 15
+            self.tw = title_weight if title_weight else'bold'
+            self.tcol = title_col if title_col else '#99d8bc'
+            self.sts = subtitle_size if subtitle_size else 12
+            self.stw = subtitle_weight if subtitle_weight else 'bold'
+            self.stcol = subtitle_col if subtitle_col else '#99d8bc'
+            self.pts = pos_title_size if pos_title_size else 10
+            self.ptw = pos_title_weight if pos_title_weight else 'regular'
+            self.ptcol = pos_title_col if pos_title_col else '#99d8bc'
+            self.ts2 = title_size_2 if title_size else 15
+            self.tw2 = title_weight_2 if title_weight else'bold'
+            self.tcol2 = title_col_2 if title_col else '#d899b5'
+            self.sts2 = subtitle_size_2 if subtitle_size else 12
+            self.stw2 = subtitle_weight_2 if subtitle_weight else 'bold'
+            self.stcol2 = subtitle_col_2 if subtitle_col else '#d899b5'
+            self.pts2 = pos_title_size_2 if pos_title_size else 10
+            self.ptw2 = pos_title_weight_2 if pos_title_weight else 'regular'
+            self.ptcol2 = pos_title_col_2 if pos_title_col else '#d899b5'
+            self.endnote = endnote if endnote else 'Inspired by Statsbomb | Adapted from soccerplots'
+            self.es = endnote_size if endnote_size else 10
+            self.ew = endnote_weight if endnote_weight else 'regular'
+            self.ecol = endnote_col if endnote_col else '#efeef0'
+            self.y_end = y_endnote if y_endnote else -13.5
+            self.radii = radii if radii else [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+            self.radius = max(self.radii)
+            self.pol_al = polygon_alpha if polygon_alpha else 0.6
+        elif style == 'light':
+            self.background_col = background_col if background_col else '#fcfdfb'
+            self.wedge_cols = wedge_cols if wedge_cols else ['#fcfdfb', '#fff9b5']
+            self.radar_cols = radar_cols if radar_cols else ['#fff9b5', '#3dd5f0', '#e45c5e']
+            self.ff = fontfamily if fontfamily else 'Liberation Serif'
+            self.lbfs = label_fontsize if label_fontsize else 10
+            self.lbcol = label_col if label_col else '#000000'
+            self.rgfs = range_fontsize if range_fontsize else 8
+            self.rgcol = range_col if range_col else '#000000'
+            self.flip_labels = flip_labels if flip_labels else True
+            self.ts = title_size if title_size else 15
+            self.tw = title_weight if title_weight else'bold'
+            self.tcol = title_col if title_col else '#3dd5f0'
+            self.sts = subtitle_size if subtitle_size else 12
+            self.stw = subtitle_weight if subtitle_weight else 'bold'
+            self.stcol = subtitle_col if subtitle_col else '#3dd5f0'
+            self.pts = pos_title_size if pos_title_size else 10
+            self.ptw = pos_title_weight if pos_title_weight else 'regular'
+            self.ptcol = pos_title_col if pos_title_col else '#3dd5f0'
+            self.ts2 = title_size_2 if title_size else 15
+            self.tw2 = title_weight_2 if title_weight else'bold'
+            self.tcol2 = title_col_2 if title_col else '#e45c5e'
+            self.sts2 = subtitle_size_2 if subtitle_size else 12
+            self.stw2 = subtitle_weight_2 if subtitle_weight else 'bold'
+            self.stcol2 = subtitle_col_2 if subtitle_col else '#e45c5e'
+            self.pts2 = pos_title_size_2 if pos_title_size else 10
+            self.ptw2 = pos_title_weight_2 if pos_title_weight else 'regular'
+            self.ptcol2 = pos_title_col_2 if pos_title_col else '#e45c5e'
+            self.endnote = endnote if endnote else 'Inspired by Statsbomb | Adapted from soccerplots'
+            self.es = endnote_size if endnote_size else 10
+            self.ew = endnote_weight if endnote_weight else 'regular'
+            self.ecol = endnote_col if endnote_col else '#000000'
+            self.y_end = y_endnote if y_endnote else -13.5
+            self.radii = radii if radii else [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+            self.radius = max(self.radii)
+            self.pol_al = polygon_alpha if polygon_alpha else 0.6
         if radar_cols_to_title:
             self.tcol = radar_cols[1]
             self.stcol = radar_cols[1]

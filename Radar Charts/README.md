@@ -69,6 +69,7 @@ Simplistic function to plot interactive radar chart with plotly.
 + *radii (list, float)* - radii for the wedges
 + *polygon_alpha (float)* - opacity for the polygons; Recommendation: <= 0.6
 + *radar_cols_to_title (boolean)* - Allows to change color of all titles in consensus with radar colors
++ *style (str)* - Styling sets ('moody' or 'light'), individual attributes can be overwritten though
 
 
 ### plot_empty_radar
