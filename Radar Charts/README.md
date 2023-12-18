@@ -233,7 +233,7 @@ Function to select parameters from dataframe and **sort by the order of the para
 
 *McKay Johns* with a quick and simple introduction into *soccerplots* radar charts - https://youtu.be/cXtC2EOQj6Q <br>
 *mplsoccer* - https://mplsoccer.readthedocs.io/en/latest/gallery/radar/plot_radar.html <br>
-*soccerplots* - https://github.com/Slothfulwave612/soccerplots/blob/master/docs/radar_chart.md#changing-alpha-values-for-comparison-radar <br>
+*soccerplots* - https://github.com/Slothfulwave612/soccerplots/blob/master/docs/radar_chart.md <br>
 
 ## References
 

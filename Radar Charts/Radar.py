@@ -150,7 +150,7 @@ class Radar:
 
     # class with all necessary methods
     def __init__(self,
-                 background_col=None, wedge_cols=None,radar_cols=None, fontfamily=None,
+                 background_col=None, wedge_cols=None, radar_cols=None, fontfamily=None,
                  label_fontsize=None, label_col=None, range_fontsize=None, range_col=None,
                  flip_labels=None, title_size=None, title_weight=None, title_col=None,
                  subtitle_size=None, subtitle_weight=None, subtitle_col=None,
@@ -173,7 +173,7 @@ class Radar:
             self.rgcol = range_col if range_col else '#efeef0'
             self.flip_labels = flip_labels if flip_labels else True
             self.ts = title_size if title_size else 15
-            self.tw = title_weight if title_weight else'bold'
+            self.tw = title_weight if title_weight else 'bold'
             self.tcol = title_col if title_col else '#99d8bc'
             self.sts = subtitle_size if subtitle_size else 12
             self.stw = subtitle_weight if subtitle_weight else 'bold'
@@ -182,7 +182,7 @@ class Radar:
             self.ptw = pos_title_weight if pos_title_weight else 'regular'
             self.ptcol = pos_title_col if pos_title_col else '#99d8bc'
             self.ts2 = title_size_2 if title_size else 15
-            self.tw2 = title_weight_2 if title_weight else'bold'
+            self.tw2 = title_weight_2 if title_weight else 'bold'
             self.tcol2 = title_col_2 if title_col else '#d899b5'
             self.sts2 = subtitle_size_2 if subtitle_size else 12
             self.stw2 = subtitle_weight_2 if subtitle_weight else 'bold'
@@ -194,8 +194,8 @@ class Radar:
             self.es = endnote_size if endnote_size else 10
             self.ew = endnote_weight if endnote_weight else 'regular'
             self.ecol = endnote_col if endnote_col else '#efeef0'
-            self.y_end = y_endnote if y_endnote else -13.5
-            self.radii = radii if radii else [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+            self.y_end = y_endnote if y_endnote else -14.5
+            self.radii = radii if radii else [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
             self.radius = max(self.radii)
             self.pol_al = polygon_alpha if polygon_alpha else 0.6
         elif style == 'light':
@@ -209,7 +209,7 @@ class Radar:
             self.rgcol = range_col if range_col else '#000000'
             self.flip_labels = flip_labels if flip_labels else True
             self.ts = title_size if title_size else 15
-            self.tw = title_weight if title_weight else'bold'
+            self.tw = title_weight if title_weight else 'bold'
             self.tcol = title_col if title_col else '#3dd5f0'
             self.sts = subtitle_size if subtitle_size else 12
             self.stw = subtitle_weight if subtitle_weight else 'bold'
@@ -218,7 +218,7 @@ class Radar:
             self.ptw = pos_title_weight if pos_title_weight else 'regular'
             self.ptcol = pos_title_col if pos_title_col else '#3dd5f0'
             self.ts2 = title_size_2 if title_size else 15
-            self.tw2 = title_weight_2 if title_weight else'bold'
+            self.tw2 = title_weight_2 if title_weight else 'bold'
             self.tcol2 = title_col_2 if title_col else '#e45c5e'
             self.sts2 = subtitle_size_2 if subtitle_size else 12
             self.stw2 = subtitle_weight_2 if subtitle_weight else 'bold'
@@ -230,8 +230,44 @@ class Radar:
             self.es = endnote_size if endnote_size else 10
             self.ew = endnote_weight if endnote_weight else 'regular'
             self.ecol = endnote_col if endnote_col else '#000000'
-            self.y_end = y_endnote if y_endnote else -13.5
-            self.radii = radii if radii else [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+            self.y_end = y_endnote if y_endnote else -14.5
+            self.radii = radii if radii else [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+            self.radius = max(self.radii)
+            self.pol_al = polygon_alpha if polygon_alpha else 0.6
+        elif style == 'basic':
+            self.background_col = background_col if background_col else '#fcfdfb'
+            self.wedge_cols = wedge_cols if wedge_cols else ['#fcfdfb', '#dfe5ed']
+            self.radar_cols = radar_cols if radar_cols else ['#dfe5ed', '#e45c5e', '#3dd5f0']
+            self.ff = fontfamily if fontfamily else 'Liberation Serif'
+            self.lbfs = label_fontsize if label_fontsize else 10
+            self.lbcol = label_col if label_col else '#000000'
+            self.rgfs = range_fontsize if range_fontsize else 8
+            self.rgcol = range_col if range_col else '#000000'
+            self.flip_labels = flip_labels if flip_labels else True
+            self.ts = title_size if title_size else 15
+            self.tw = title_weight if title_weight else 'bold'
+            self.tcol = title_col if title_col else '#e45c5e'
+            self.sts = subtitle_size if subtitle_size else 12
+            self.stw = subtitle_weight if subtitle_weight else 'bold'
+            self.stcol = subtitle_col if subtitle_col else '#e45c5e'
+            self.pts = pos_title_size if pos_title_size else 10
+            self.ptw = pos_title_weight if pos_title_weight else 'regular'
+            self.ptcol = pos_title_col if pos_title_col else '#e45c5e'
+            self.ts2 = title_size_2 if title_size else 15
+            self.tw2 = title_weight_2 if title_weight else 'bold'
+            self.tcol2 = title_col_2 if title_col else '#3dd5f0'
+            self.sts2 = subtitle_size_2 if subtitle_size else 12
+            self.stw2 = subtitle_weight_2 if subtitle_weight else 'bold'
+            self.stcol2 = subtitle_col_2 if subtitle_col else '#3dd5f0'
+            self.pts2 = pos_title_size_2 if pos_title_size else 10
+            self.ptw2 = pos_title_weight_2 if pos_title_weight else 'regular'
+            self.ptcol2 = pos_title_col_2 if pos_title_col else '#3dd5f0'
+            self.endnote = endnote if endnote else 'Inspired by Statsbomb | Adapted from soccerplots'
+            self.es = endnote_size if endnote_size else 10
+            self.ew = endnote_weight if endnote_weight else 'regular'
+            self.ecol = endnote_col if endnote_col else '#000000'
+            self.y_end = y_endnote if y_endnote else -14.5
+            self.radii = radii if radii else [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
             self.radius = max(self.radii)
             self.pol_al = polygon_alpha if polygon_alpha else 0.6
         if radar_cols_to_title:
@@ -241,6 +277,7 @@ class Radar:
             self.tcol2 = radar_cols[2]
             self.stcol2 = radar_cols[2]
             self.ptcol2 = radar_cols[2]
+
     # ---------------------------------------------------------
     # function to plot empty radar chart area (only the wedges)
     # ---------------------------------------------------------
@@ -362,9 +399,8 @@ class Radar:
 
         fig, ax = plt.subplots(figsize=(20, 10), facecolor=self.background_col)
         ax.set_facecolor(self.background_col)
-
         ax.set_aspect('equal')
-        ax.set(xlim=(-15, 15), ylim=(-15, 15))
+        ax.set(xlim=(-16, 16), ylim=(-16, 16))
 
         rotations = ru.get_label_coordinates(n=len(params))[:, 2]
 
@@ -381,27 +417,27 @@ class Radar:
         ax, xy, range_values = self.add_value_ranges(ranges=ranges, ax=ax)
 
         if title:
-            ax.text(-14.5, 14.5, title, ha='left', va='top',
+            ax.text(-15.5, 15.5, title, ha='left', va='top',
                     fontdict={'color': self.tcol, 'size': self.ts, 'weight': self.tw})
         if title_2:
-            ax.text(14.5, 14.5, title_2, ha='right', va='top',
+            ax.text(15.5, 15.5, title_2, ha='right', va='top',
                     fontdict={'color': self.tcol2, 'size': self.ts2, 'weight': self.tw2})
         if subtitle:
-            ax.text(-14.5, 13.5, subtitle, ha='left', va='top',
+            ax.text(-15.5, 14.5, subtitle, ha='left', va='top',
                     fontdict={'color': self.stcol, 'size': self.sts, 'weight': self.stw})
         if subtitle_2:
-            ax.text(14.5, 13.5, subtitle_2, ha='right', va='top',
+            ax.text(15.5, 14.5, subtitle_2, ha='right', va='top',
                     fontdict={'color': self.stcol2, 'size': self.sts2, 'weight': self.stw2})
         if pos_title:
-            ax.text(-14.5, 12.5, pos_title, ha='left', va='top',
+            ax.text(-15.5, 13.5, pos_title, ha='left', va='top',
                     fontdict={'color': self.ptcol, 'size': self.pts, 'weight': self.ptw})
         if pos_title_2:
-            ax.text(14.5, 12.5, pos_title_2, ha='right', va='top',
+            ax.text(15.5, 13.5, pos_title_2, ha='right', va='top',
                     fontdict={'color': self.ptcol2, 'size': self.pts2, 'weight': self.ptw2})
 
         if endnote:
             for note in endnote.split('\n'):
-                ax.text(14.5, y_endnote, note, ha='right', fontdict={"color": self.ecol}, fontsize=self.es)
+                ax.text(15.5, y_endnote, note, ha='right', fontdict={"color": self.ecol}, fontsize=self.es)
                 y_endnote -= 0.75
 
         ax.axis('off')
@@ -470,15 +506,21 @@ class Radar:
 
         return ax, np.array(xys), range_values
 
-
     def plot_wedges(self, ax):
 
         # zorder for wedges
         zow = 2
-        for rad in self.radii:
-            if rad % 2 == 0:
-                wedge = patches.Wedge(center=(0, 0), r=rad + 1, theta1=0, theta2=360, width=1, color=self.wedge_cols[1],
-                                      zorder=zow)
+        for i, rad in enumerate(self.radii):
+            if i % 2 == 0:
+                if i == 0:
+                    # make innermost wedge full circle
+                    wedge = patches.Wedge(center=(0, 0), r=rad + 1, theta1=0, theta2=360, width=2,
+                                          color=self.wedge_cols[1],
+                                          zorder=zow)
+                else:
+                    wedge = patches.Wedge(center=(0, 0), r=rad + 1, theta1=0, theta2=360, width=1,
+                                          color=self.wedge_cols[1],
+                                          zorder=zow)
                 ax.add_patch(wedge)
             else:
                 wedge = patches.Wedge(center=(0, 0), r=rad + 1, theta1=0, theta2=360, width=1, color=self.wedge_cols[0],
@@ -496,10 +538,15 @@ class Radar:
         if num_players == 1:
             radar = Polygon(vertices, fc=self.radar_cols[0], alpha=self.pol_al)
             ax.add_patch(radar)
-            for rad in self.radii:
-                if rad % 2 == 0:
-                    wedge = patches.Wedge(center=(0, 0), r=rad + 1, theta1=0, theta2=360, width=1,
-                                          color=self.radar_cols[1], zorder=zow)
+            for i, rad in enumerate(self.radii):
+                if i % 2 == 0:
+                    # make innermost wedge full circle
+                    if i == 0:
+                        wedge = patches.Wedge(center=(0, 0), r=rad + 1, theta1=0, theta2=360, width=2,
+                                              color=self.radar_cols[1], zorder=zow)
+                    else:
+                        wedge = patches.Wedge(center=(0, 0), r=rad + 1, theta1=0, theta2=360, width=1,
+                                              color=self.radar_cols[1], zorder=zow)
                     wedge.set_clip_path(radar)
                     ax.add_patch(wedge)
                 else:
