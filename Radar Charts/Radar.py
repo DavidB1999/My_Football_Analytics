@@ -8,6 +8,7 @@ import radar_utils as ru
 from matplotlib.patches import Polygon
 from matplotlib import patches
 import warnings
+import matplotlib
 
 
 # ------------------------------------------------------
@@ -323,7 +324,8 @@ class Radar:
     def plot_radar(self, player1, p1_data, param_col='Variables', value_col='Values', percentile_col='Percentiles',
                    ranges=None, params=None, title=None, subtitle=None, pos_title=None,
                    title_2=None, subtitle_2=None, pos_title_2=None, y_endnote=None,
-                   endnote=None, player2=None, p2_data=None, display_type='Values'):
+                   endnote=None, player2=None, p2_data=None, display_type='Values',
+                   ax: matplotlib.axes = None):
 
         # optional to overwrite endnote settings
         if endnote:
@@ -396,8 +398,8 @@ class Radar:
         if p2_data is not None:
             assert len(values1) == len(values2) == len(percentiles2), "The number of values and percentile " \
                                                                       "ranks for both players must match! "
-
-        fig, ax = plt.subplots(figsize=(20, 10), facecolor=self.background_col)
+        ax = ax or plt.subplots(figsize=(20, 10), facecolor=self.background_col)[1]
+        # fig, ax = plt.subplots(figsize=(20, 10), facecolor=self.background_col)
         ax.set_facecolor(self.background_col)
         ax.set_aspect('equal')
         ax.set(xlim=(-16, 16), ylim=(-16, 16))
