@@ -90,7 +90,8 @@ Function that plots only the empty chart; the foundation of the plot. <br>
                 (self, player1, p1_data, param_col='Variables', value_col='Values', percentile_col='Percentiles',
                 ranges=None, params=None, title=None, subtitle=None, pos_title=None,
                 title_2=None, subtitle_2=None, pos_title_2=None, y_endnote=None,
-                endnote=None, player2=None, p2_data=None, display_type='Values')
+                endnote=None, player2=None, p2_data=None, display_type='Values',
+                ax: matplotlib.axes = None)
 
 **Parameters** 
 
@@ -108,6 +109,7 @@ Function that plots only the empty chart; the foundation of the plot. <br>
 + *player2 (str)* - name of second player
 + *p2_data (pandas Dataframe)* - data for second player; optional and if supplied both players will be plotted
 + *display_types (str)* - Either "Values" or "Percentile" - whether values or percentiles are to be displayed
++ *ax (matplotlib.axes)* ax to plot to, if none new figure is created
 
 **Returns**
 
