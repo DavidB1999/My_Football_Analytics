@@ -10,21 +10,6 @@ Nevertheless, I adapted my favourite version of radar charts (as done my soccerp
 # Radar.py
 **Radar.py** contains this adaptation along with my simplistic plotly-based function to create radar charts:
 
-### param_select
-                (df, params, var_col='Variables')
-
-Function to select parameters from dataframe and **sort by the order of the parameters**!
-
-**Parameters**
-
-+ *df (pandas Dataframe)* - Dataframe to select from
-+ *params (list, str)* - List of parameters to select
-+ *var_col (str)* - Column in df where the params are to be found
-
-**Returns**
-
-*df_new (pandas Dataframe)*
-
 
 ### create_radar_plotly
                         (df1, player1, df2=None, player2=None, lines=False, var_col='Variables',
@@ -83,18 +68,27 @@ Simplistic function to plot interactive radar chart with plotly.
 + *y_endnote (float)* - y-coordinate of the endnote
 + *radii (list, float)* - radii for the wedges
 + *polygon_alpha (float)* - opacity for the polygons; Recommendation: <= 0.6
++ *radar_cols_to_title (boolean)* - Allows to change color of all titles in consensus with radar colors
 
 
 ### plot_empty_radar
-                    (self)
+                    (self, y_endnote=None, endnote=None)
 
 Function that plots only the empty chart; the foundation of the plot. <br>
 
+**Parameters**
+
++ *y_endnote (float)* - y-coordinate of the endnote (overwrites y_endnote defined in class)
++ *endnote (str)* - Text for the endnote (overwrites endnote text defined in class)
+
+**Returns**
+
++ ax
 
 ### plot_radar
                 (self, player1, p1_data, param_col='Variables', value_col='Values', percentile_col='Percentiles',
                 ranges=None, params=None, title=None, subtitle=None, pos_title=None,
-                title_2=None, subtitle_2=None, pos_title_2=None,
+                title_2=None, subtitle_2=None, pos_title_2=None, y_endnote=None,
                 endnote=None, player2=None, p2_data=None, display_type='Values')
 
 **Parameters** 
@@ -108,6 +102,7 @@ Function that plots only the empty chart; the foundation of the plot. <br>
 + *title, title_2(str)* title for player 1 (left) and title for player 2 (right)
 + *subtitle, subtitle_2(str)* subtitle for player 1 (left) and subtitle for player 2 (right)
 + *pos_title, pos_title_2(str)* sub-sub-title for player 1 (left) and sub-sub-title for player 2 (right)
++ *y_endnote (float)* - y-coordinate of the endnote (overwrites y_endnote defined in class)
 + *endnote (str)* - Text for the endnote (overwrites endnote text defined in class)
 + *player2 (str)* - name of second player
 + *p2_data (pandas Dataframe)* - data for second player; optional and if supplied both players will be plotted
@@ -185,6 +180,52 @@ If two players are plotted 2 polygons are plotted on top of the wedges from *plo
 
 
 # radar_utils.py
+
+### get_label_coordinates
+                        (n)
+
+Function to get coordinates for labels for each polar in radar chart. <br>
+
+**Parameters**
+
++ *n (int)* - number of parameters
+
+**Returns**
+
++ *np.c_[coord_x, coord_y, alphas] (stacked array)* - coordoinates and rotational angles in radians for each paramter
+
+### get_radar_coord
+                    (values, radius, ranges, rot)
+
+Function to get the coordinates of the radar area vertices (for the polygons)<br>
+
+**Parameters**
+
++ *values (list, float)* - List of values to be displayed (values or percentile ranks)
++ *radius (float)* - Radius of the circular area of the plot
++ *ranges (list, tuple, float)* - ranges for the plotted parameters 
++ *rot (list, float)* angle of each parameter in radians; usually the third 'column' of the return from *get_radar_coord*
+
+**Returns**
+
++ *xy (list, list, float)* - x and y coordinates for polygons.
+
+
+### param_select
+                (df, params, var_col='Variables')
+
+Function to select parameters from dataframe and **sort by the order of the parameters**!
+
+**Parameters**
+
++ *df (pandas Dataframe)* - Dataframe to select from
++ *params (list, str)* - List of parameters to select
++ *var_col (str)* - Column in df where the params are to be found
+
+**Returns**
+
+*df_new (pandas Dataframe)*
+
 
 
 ## Credits

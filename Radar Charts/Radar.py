@@ -10,21 +10,6 @@ from matplotlib import patches
 import warnings
 
 
-# -------------------------------------------------------------------
-# function to select parameters of interest and filter df accordingly
-# -------------------------------------------------------------------
-
-def param_select(df, params, var_col='Variables'):
-    df_new = df[df[var_col].isin(params)]  # select columns of interest
-
-    # merge with column of parameters in correct order
-    # to ensure data is sorted by the order of parameters selected
-    dummy = pd.Series(params, name=var_col).to_frame()
-    df_new = pd.merge(dummy, df_new, on=var_col, how='left')
-
-    return df_new
-
-
 # ------------------------------------------------------
 # function to create interactive radar chart with plotly
 # ------------------------------------------------------
@@ -177,7 +162,7 @@ class Radar:
                  pos_title_size_2=10, pos_title_weight_2='regular', pos_title_col_2='#d899b5',
                  endnote='Inspired by Statsbomb | Adapted from soccerplots',
                  endnote_size=10, endnote_weight='regular', endnote_col='#efeef0', y_endnote=-13.5,
-                 radii=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], polygon_alpha=0.6):
+                 radii=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], polygon_alpha=0.6, radar_cols_to_title=False):
 
         self.background_col = background_col
         self.wedge_cols = wedge_cols
@@ -214,12 +199,29 @@ class Radar:
         self.radii = radii
         self.radius = max(radii)
         self.pol_al = polygon_alpha
-
+        if radar_cols_to_title:
+            self.tcol = radar_cols[1]
+            self.stcol = radar_cols[1]
+            self.ptcol = radar_cols[1]
+            self.tcol2 = radar_cols[2]
+            self.stcol2 = radar_cols[2]
+            self.ptcol2 = radar_cols[2]
     # ---------------------------------------------------------
     # function to plot empty radar chart area (only the wedges)
     # ---------------------------------------------------------
 
-    def plot_empty_radar(self):
+    def plot_empty_radar(self, y_endnote=None, endnote=None):
+
+        # optional to overwrite endnote settings
+        if endnote:
+            pass
+        else:
+            endnote = self.endnote
+
+        if y_endnote:
+            pass
+        else:
+            y_endnote = self.y_end
 
         # set up figure
         fig, ax = plt.subplots(figsize=(20, 10), facecolor=self.background_col)
@@ -233,11 +235,10 @@ class Radar:
         radius = self.radii[-1]
         ax = self.plot_wedges(ax=ax)
 
-        if self.endnote:
-            y_end = self.y_end
-            for note in self.endnote.split('\n'):
-                ax.text(14.5, y_end, note, ha='right', fontdict={"color": self.ecol}, fontsize=self.es)
-                y_end -= 0.75
+        if endnote:
+            for note in endnote.split('\n'):
+                ax.text(14.5, y_endnote, note, ha='right', fontdict={"color": self.ecol}, fontsize=self.es)
+                y_endnote -= 0.75
 
         ax.axis('off')
 
@@ -249,8 +250,19 @@ class Radar:
 
     def plot_radar(self, player1, p1_data, param_col='Variables', value_col='Values', percentile_col='Percentiles',
                    ranges=None, params=None, title=None, subtitle=None, pos_title=None,
-                   title_2=None, subtitle_2=None, pos_title_2=None,
+                   title_2=None, subtitle_2=None, pos_title_2=None, y_endnote=None,
                    endnote=None, player2=None, p2_data=None, display_type='Values'):
+
+        # optional to overwrite endnote settings
+        if endnote:
+            pass
+        else:
+            endnote = self.endnote
+
+        if y_endnote:
+            pass
+        else:
+            y_endnote = self.y_end
 
         # assert that name and data for second player are only supplied in combination
         if player2:
@@ -352,11 +364,10 @@ class Radar:
             ax.text(14.5, 12.5, pos_title_2, ha='right', va='top',
                     fontdict={'color': self.ptcol2, 'size': self.pts2, 'weight': self.ptw2})
 
-        if self.endnote:
-            y_end = self.y_end
-            for note in self.endnote.split('\n'):
-                ax.text(14.5, y_end, note, ha='right', fontdict={"color": self.ecol}, fontsize=self.es)
-                y_end -= 0.75
+        if endnote:
+            for note in endnote.split('\n'):
+                ax.text(14.5, y_endnote, note, ha='right', fontdict={"color": self.ecol}, fontsize=self.es)
+                y_endnote -= 0.75
 
         ax.axis('off')
 
