@@ -1,6 +1,6 @@
 # My Football Analytics
 
-This is supposed to be a collection of ,my code within the area of football analytics.
+This is supposed to be a collection of my code within the area of football analytics.
 It is primarily intended as an overview for me and as a portfolio of my work.
 Therefore, it is not necessarily designed for a convenient use for everyone.
 Should anyone stumble across this repository , feel free to check it out. :grin: <br>
