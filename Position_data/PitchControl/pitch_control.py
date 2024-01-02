@@ -334,7 +334,7 @@ def pitch_control_at_target(target_position, attacking_players, defending_player
                 PPCFatt[
                     i] += player.PPCF  # add to sum over players in the attacking team (remembering array element is zero at the start of each integration iteration)
             for player in defending_players:
-                # calculate ball control probablity for 'player' in time interval T+dt
+                # calculate ball control probability for 'player' in time interval T+dt
                 dPPCFdT = (1 - PPCFatt[i - 1] - PPCFdef[i - 1]) * player.probability_intercept_ball(
                     T) * player.params['lambda_def']
                 # make sure it's greater than zero
@@ -488,7 +488,7 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
                          reaction_time=0.7, max_player_speed=None, average_ball_speed=15, sigma=0.45, lamb=4.3,
                          n_grid_points_x=50, n_grid_points_y=30, device='cpu', dtype=torch.float32,
                          first_frame=0, last_frame=500, batch_size=250, deg=50, implementation=None, max_int=500,
-                         team='Home', return_pcpp=False):
+                         team='Home', return_pcpp=False, fix_tti=True):
     if implementation is None:
         if version == 'Spearman':
             implementation = 'GL'
@@ -585,14 +585,27 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
                 r_reaction_away = r_reaction_away - target_position  # after reaction time
 
                 # time to intercept for home and away filled
+                """The time to intercept is calculated for both teams separately by using the torch.norm function to 
+                give us the hypotenuse of the triangle formed by distances to target location in both x and y 
+                dimensions which is equivalent to the actual distance across both dimensions to the target location. 
+                This is divided by the maximal player speed and the resulting time is added to the reaction time (
+                default 0.7s). In the original the reaction time is added before the distance is divided by the 
+                speed, which makes no sense to me! """
 
-                tti[:h_players, :ball_travel_time.shape[1]] = torch.norm(r_reaction_home, dim=4).add_(
-                    reaction_time).div_(
-                    max_player_speed)
-                tti[h_players:, :ball_travel_time.shape[1]] = torch.norm(r_reaction_away, dim=4).add_(
-                    reaction_time).div_(
-                    max_player_speed)
-
+                if fix_tti:
+                    tti[:h_players, :ball_travel_time.shape[1]] = torch.norm(r_reaction_home, dim=4).div_(
+                        max_player_speed).add_(
+                        reaction_time)
+                    tti[h_players:, :ball_travel_time.shape[1]] = torch.norm(r_reaction_away, dim=4).div_(
+                        max_player_speed).add_(
+                        reaction_time)
+                else:
+                    tti[:h_players, :ball_travel_time.shape[1]] = torch.norm(r_reaction_home, dim=4).add_(
+                        reaction_time).div_(
+                        max_player_speed)
+                    tti[h_players:, :ball_travel_time.shape[1]] = torch.norm(r_reaction_away, dim=4).add_(
+                        reaction_time).div_(
+                        max_player_speed)
                 tmp2[:, :fd, :, :, 0] = exp * (ball_travel_time - tti[:, :ball_travel_time.shape[1]])
                 tmp1 = exp * 0.5 * (ti + 1) * 10 + tmp2[:, :fd, :, :, :]
                 if team == 'Home':
@@ -629,20 +642,26 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
                 av = torch.tensor(Away_vel_array[:, f0:fn], device=device, dtype=dtype)
 
                 ball_travel_time = torch.norm(target_position - bp, dim=4).div_(average_ball_speed)
-                print(ball_travel_time.shape)
                 r_reaction_home = hp + hv.mul_(reaction_time)  # position after reaction time (vector)
                 r_reaction_away = ap + av.mul_(reaction_time)  # = position + velocity multiplied by reaction time
                 r_reaction_home = r_reaction_home - target_position  # distance to target position (vector)
                 r_reaction_away = r_reaction_away - target_position  # after reaction time
 
                 # time to intercept for home and away filled
-
-                tti[:h_players, :ball_travel_time.shape[1]] = torch.norm(r_reaction_home, dim=4).add_(
-                    reaction_time).div_(
-                    max_player_speed)
-                tti[h_players:, :ball_travel_time.shape[1]] = torch.norm(r_reaction_away, dim=4).add_(
-                    reaction_time).div_(
-                    max_player_speed)
+                if fix_tti:
+                    tti[:h_players, :ball_travel_time.shape[1]] = torch.norm(r_reaction_home, dim=4).div_(
+                        max_player_speed).add_(
+                        reaction_time)
+                    tti[h_players:, :ball_travel_time.shape[1]] = torch.norm(r_reaction_away, dim=4).div_(
+                        max_player_speed).add_(
+                        reaction_time)
+                else:
+                    tti[:h_players, :ball_travel_time.shape[1]] = torch.norm(r_reaction_home, dim=4).add_(
+                        reaction_time).div_(
+                        max_player_speed)
+                    tti[h_players:, :ball_travel_time.shape[1]] = torch.norm(r_reaction_away, dim=4).add_(
+                        reaction_time).div_(
+                        max_player_speed)
 
                 y = torch.zeros([n_players, bp.shape[1], n_grid_points_x, n_grid_points_y], device=device, dtype=dtype)
                 for tt in range(max_int):
@@ -650,7 +669,8 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
                     if torch.min(sumy) > 0.99:  # convergence
                         break
                     # added relu to tackle infinite negative due to infinite large sumy!
-                    y += dt * lamb * relu(1. - sumy) * 1. / (1. + torch.exp(-exp * (dt * tt + ball_travel_time - tti[:, :ball_travel_time.shape[1]])))
+                    y += dt * lamb * relu(1. - sumy) * 1. / (1. + torch.exp(
+                        -exp * (dt * tt + ball_travel_time - tti[:, :ball_travel_time.shape[1]])))
 
                 if team == 'Home':
                     pc[(first_frame + b * batch_size):
@@ -703,7 +723,6 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
         # proportion of max. speed
         # max speed = 13m/s
         # maximal rate of 1 (i.e. excluding faster than assumed max speed
-        # according to Fernandez (2018) eq. (18) this is not correct
         Srat_home = torch.min((s_home / max_player_speed) ** 2, torch.Tensor([1]))
         Srat_away = torch.min((s_away / max_player_speed) ** 2, torch.Tensor([1]))
 
@@ -818,7 +837,8 @@ def plot_tensor_pitch_control(td_object, frame, pitch_control=None, version='Spe
                               vel_nan_to=0, remove_first_frames=0, reaction_time=0.7, max_player_speed=None,
                               average_ball_speed=15, sigma=0.45, lamb=4.3, n_grid_points_x=50, n_grid_points_y=30,
                               device='cpu', dtype=torch.float32, first_frame=0, last_frame=500, batch_size=250, deg=50,
-                              implementation=None, max_int=500, cmap=None, velocities=True, flip_y=None, team='Home'):
+                              implementation=None, max_int=500, cmap=None, velocities=True, flip_y=None, team='Home',
+                              fix_tti=True):
     if implementation is None:
         if version == 'Spearman':
             implementation = 'GL'
@@ -844,7 +864,7 @@ def plot_tensor_pitch_control(td_object, frame, pitch_control=None, version='Spe
                                              n_grid_points_x=n_grid_points_x, n_grid_points_y=n_grid_points_y,
                                              device=device, dtype=dtype, first_frame=first_frame, last_frame=last_frame,
                                              batch_size=batch_size, deg=deg, implementation=implementation,
-                                             max_int=max_int)
+                                             max_int=max_int, return_pcpp=False, fix_tti=fix_tti)
     # if Fernandez we need to adapt dimensions of pc tensor
     if version == 'Fernandez':
         pitch_control = pitch_control.reshape(pitch_control.shape[0], n_grid_points_y, n_grid_points_x)
@@ -886,7 +906,7 @@ def plot_tensor_pitch_control(td_object, frame, pitch_control=None, version='Spe
     else:
         raise ValueError(f'{version} is not a valid version. Chose either "Fernandez" or "Spearman"')
 
-    return fig
+    return fig, ax
 
 
 ################################################################################################################
@@ -917,7 +937,7 @@ def animate_tensor_pitch_control(td_object, version='Spearman', pitch_control=No
                                  flip_y=None, team='Home', progress_steps=[0.25, 0.5, 0.75], frames_per_second=None,
                                  fpath=None, fname='Animation', pitch_col='#1c380e', line_col='white',
                                  colors=['red', 'blue', 'black'], PlayerAlpha=0.7, first_frame_ani=0,
-                                 last_frame_ani=100):
+                                 last_frame_ani=100, fix_tti=True):
     if implementation is None:
         if version == 'Spearman':
             implementation = 'GL'
@@ -968,7 +988,7 @@ def animate_tensor_pitch_control(td_object, version='Spearman', pitch_control=No
                                              device=device,
                                              dtype=dtype, first_frame=first_frame_calc, last_frame=last_frame_calc,
                                              batch_size=batch_size, deg=deg, implementation=implementation,
-                                             max_int=max_int)
+                                             max_int=max_int, return_pcpp=False, fix_tti=fix_tti)
     if version == 'Fernandez':
         pitch_control = pitch_control.reshape(pitch_control.shape[0], n_grid_points_y, n_grid_points_x)
 

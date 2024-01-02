@@ -266,8 +266,8 @@ This can take quite a while so a small number of frames and the use of *progress
                         (td_object, version, jitter=1e-12, pos_nan_to=-1000, vel_nan_to=0, remove_first_frames=0,
                          reaction_time=0.7, max_player_speed=None, average_ball_speed=15, sigma=0.45, lamb=4.3,
                          n_grid_points_x=50, n_grid_points_y=30, device='cpu', dtype=torch.float32,
-                         first_frame=0, last_frame=500, batch_size=250, deg=50, implementation='GL', max_int=500,
-                         team='Home')
+                         first_frame=0, last_frame=500, batch_size=250, deg=50, implementation=None, max_int=500,
+                         team='Home', return_pcpp=False, fix_tti=True)
 
 
 Function calculate the pitch control of the home team in a given range of frames. Function relies on tracking_data class
@@ -295,18 +295,21 @@ object from my tracking data package. Function is based on the code by "anenglis
 + *implementation (str)* - Computation version. So far the Gauss-Legendre quadrature ('GL') version and a classical integration version are included for Spearman. For Fernandez his original approach ('org') and adaption for spaces far away from all players are included ('adap')
 + *max_int (int)* - maximal interval length for integration method
 + *team (str)* - "Team-perspective" for pitch control modeling - Either "Home" or "Away"
++ *return_pcpp (boolean)* - determines whether pitch control for each individual player is returned
++ *fix_tti (boolean)* - determines whether a correction (in my humble opinion) or the original time to intercept as implemented by anenglishgoat is used
 
 **Returns**
 
 + *pc (torch.tensor)* - Pitch control for home team of shape (n_frames, *n_grid_points_x*, *n_grid_points_y* ) covering every target location on the pitch in all of the selceted frames
-
++ *pcpp (torch.tensor)* - pitch control for each individual player 
 
 ### plot_tensor_pitch_control
                             (td_object, frame, pitch_control=None, version='Spearman', jitter=1e-12, pos_nan_to=-1000,
-                            vel_nan_to=0, remove_first_frames=0, reaction_time=0.7, max_player_speed=None,
-                            average_ball_speed=15, sigma=0.45, lamb=4.3, n_grid_points_x=50, n_grid_points_y=30, 
-                            device='cpu', dtype=torch.float32, first_frame=0, last_frame=500, batch_size=250, deg=50,
-                            implementation='GL', max_int=500, cmap=None, velocities=True, flip_y=None, team='Home')
+                              vel_nan_to=0, remove_first_frames=0, reaction_time=0.7, max_player_speed=None,
+                              average_ball_speed=15, sigma=0.45, lamb=4.3, n_grid_points_x=50, n_grid_points_y=30,
+                              device='cpu', dtype=torch.float32, first_frame=0, last_frame=500, batch_size=250, deg=50,
+                              implementation=None, max_int=500, cmap=None, velocities=True, flip_y=None, team='Home',
+                              fix_tti=True)
 
 Function to plot players and pitch control a pitch. Uses the *plot_players* from the tracking data class and the 
 *tensor_pitch_control* function. 
@@ -317,7 +320,7 @@ Function to plot players and pitch control a pitch. Uses the *plot_players* from
 + *frame (int)* - frame to be plotted (absolute frame number)
 + *pitch_control (torch.tensor)* - Output from *tensor_pitch_control* function. *tensor_pitch_control* will only be called if None 
 + *version (str)* - Pitch control implementation by 'Fernandez' or 'Spearman'
-+ *jitter (float)* - minimal value added to players velocity to avoid devision by zero
++ *jitter (float)* - minimal value added to players velocity to avoid division by zero
 + *pos_nan_to (float)* - Value to replace missing values in position data with. Default is -1000 to render the impact of inactive players to basically 0.
 + *vel_nan_to (float)* - Value to replace missing values in velocity data with. Default is 0 to render the impact of inactive players to basically 0.
 + *remove_first_frames (float)* - Allows to skip first n frames of selected frame range; fromDefault is 0; superfluous when using *first_frame* and *last_frame*
@@ -338,6 +341,7 @@ Function to plot players and pitch control a pitch. Uses the *plot_players* from
 + *velocities (boolean)* - Whether velocities are supposed to be displayed
 + *flip_y (boolean)* - Not recommended. Flips the pitch control on y-axis. Can be a quick fix if pitch control is on its head 
 + *team (str)* - "Team-perspective" for pitch control modeling - Either "Home" or "Away"
++ *fix_tti (boolean)* - determines whether a correction (in my humble opinion) or the original time to intercept as implemented by anenglishgoat is used
 
 
 **Returns**
@@ -368,8 +372,8 @@ Function to convert data frame to array as required in tensor_pitch_control.
                                  batch_size=250, deg=50, implementation='GL', max_int=500, cmap=None, velocities=True,
                                  flip_y=None, team='Home', progress_steps=[0.25, 0.5, 0.75], frames_per_second=None,
                                  fpath=None, fname='Animation', pitch_col='#1c380e', line_col='white',
-                                 colors=['red', 'blue', 'black'], PlayerAlpha=0.7, first_frame_ani=0, 
-                                 last_frame_ani=100)
+                                 colors=['red', 'blue', 'black'], PlayerAlpha=0.7, first_frame_ani=0,
+                                 last_frame_ani=100, fix_tti=True)
 
 Function to create an animation of player and ball position and pitch control over a given range of frames.
 
@@ -408,7 +412,7 @@ Function to create an animation of player and ball position and pitch control ov
 + *first_frame_ani*, *last_frame_ani (int)* - frame interval to be animated(interval should be within calculation interval!)
 + *max_int (int)* - maximal interval length for integration method
 + *team (str)* - "Team-perspective" for pitch control modeling - Either "Home" or "Away"
-
++ *fix_tti (boolean)* - determines whether a correction (in my humble opinion) or the original time to intercept as implemented by anenglishgoat is used
 
 
 ## Credits
