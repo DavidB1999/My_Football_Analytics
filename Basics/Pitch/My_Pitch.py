@@ -47,39 +47,39 @@ class myPitch:
 
         ax.patch.set_facecolor(self.grasscol)
         # Pitch Outline & Centre Line
-        ax.plot([0, 0], [0, self.w], color=self.linecol, linewidth=linewidth)
-        ax.plot([0, self.l], [self.w, self.w], color=self.linecol, linewidth=linewidth)
-        ax.plot([self.l, self.l], [self.w, 0], color=self.linecol, linewidth=linewidth)
-        ax.plot([self.l, 0], [0, 0], color=self.linecol, linewidth=linewidth)
-        ax.plot([self.l / 2, self.l / 2], [0, self.w], color=self.linecol, linewidth=linewidth)
+        ax.plot([0, 0], [0, self.w], color=self.linecol, linewidth=linewidth, zorder=1)
+        ax.plot([0, self.l], [self.w, self.w], color=self.linecol, linewidth=linewidth, zorder=1)
+        ax.plot([self.l, self.l], [self.w, 0], color=self.linecol, linewidth=linewidth, zorder=1)
+        ax.plot([self.l, 0], [0, 0], color=self.linecol, linewidth=linewidth, zorder=1)
+        ax.plot([self.l / 2, self.l / 2], [0, self.w], color=self.linecol, linewidth=linewidth, zorder=1)
 
         # Penalty areas - 7.32*0.5 + 5.5 + 11 = 20.16
         # Left
-        ax.plot([16.5, 16.5], [self.w / 2 + 20.16, self.w / 2 - 20.16], color=self.linecol, linewidth=linewidth)
-        ax.plot([0, 16.5], [self.w / 2 + 20.16, self.w / 2 + 20.16], color=self.linecol, linewidth=linewidth)
-        ax.plot([16.5, 0], [self.w / 2 - 20.16, self.w / 2 - 20.16], color=self.linecol, linewidth=linewidth)
+        ax.plot([16.5, 16.5], [self.w / 2 + 20.16, self.w / 2 - 20.16], color=self.linecol, linewidth=linewidth, zorder=1)
+        ax.plot([0, 16.5], [self.w / 2 + 20.16, self.w / 2 + 20.16], color=self.linecol, linewidth=linewidth, zorder=1)
+        ax.plot([16.5, 0], [self.w / 2 - 20.16, self.w / 2 - 20.16], color=self.linecol, linewidth=linewidth, zorder=1)
         # Right
         ax.plot([self.l, self.l - 16.5], [self.w / 2 + 20.16, self.w / 2 + 20.16], color=self.linecol,
-                linewidth=linewidth)
+                linewidth=linewidth, zorder=1)
         ax.plot([self.l - 16.5, self.l - 16.5], [self.w / 2 + 20.16, self.w / 2 - 20.16], color=self.linecol,
-                linewidth=linewidth)
+                linewidth=linewidth, zorder=1)
         ax.plot([self.l - 16.5, self.l], [self.w / 2 - 20.16, self.w / 2 - 20.16], color=self.linecol,
-                linewidth=linewidth)
+                linewidth=linewidth, zorder=1)
 
         # 6 yard boxes - 7.32*0.5 + 5.5 = 9.16
         # Left
-        ax.plot([0, 5.5], [self.w / 2 + 9.16, self.w / 2 + 9.16], color=self.linecol, linewidth=linewidth)
-        ax.plot([5.5, 5.5], [self.w / 2 + 9.16, self.w / 2 - 9.16], color=self.linecol, linewidth=linewidth)
-        ax.plot([5.5, 0.5], [self.w / 2 - 9.16, self.w / 2 - 9.16], color=self.linecol, linewidth=linewidth)
+        ax.plot([0, 5.5], [self.w / 2 + 9.16, self.w / 2 + 9.16], color=self.linecol, linewidth=linewidth, zorder=1)
+        ax.plot([5.5, 5.5], [self.w / 2 + 9.16, self.w / 2 - 9.16], color=self.linecol, linewidth=linewidth, zorder=1)
+        ax.plot([5.5, 0.5], [self.w / 2 - 9.16, self.w / 2 - 9.16], color=self.linecol, linewidth=linewidth, zorder=1)
         # Right
-        ax.plot([self.l, self.l - 5.5], [self.w / 2 + 9.16, self.w / 2 + 9.16], color=self.linecol, linewidth=linewidth)
+        ax.plot([self.l, self.l - 5.5], [self.w / 2 + 9.16, self.w / 2 + 9.16], color=self.linecol, linewidth=linewidth, zorder=1)
         ax.plot([self.l - 5.5, self.l - 5.5], [self.w / 2 + 9.16, self.w / 2 - 9.16], color=self.linecol,
-                linewidth=linewidth)
-        ax.plot([self.l - 5.5, self.l], [self.w / 2 - 9.16, self.w / 2 - 9.16], color=self.linecol, linewidth=linewidth)
+                linewidth=linewidth, zorder=1)
+        ax.plot([self.l - 5.5, self.l], [self.w / 2 - 9.16, self.w / 2 - 9.16], color=self.linecol, linewidth=linewidth, zorder=1)
 
         # Goals - 7.32*0.5
-        ax.plot([self.l, self.l], [self.w / 2 - 3.66, self.w / 2 + 3.66], color=self.linecol, linewidth=self.goal_width)
-        ax.plot([0, 0], [self.w / 2 - 3.66, self.w / 2 + 3.66], color=self.linecol, linewidth=self.goal_width)
+        ax.plot([self.l, self.l], [self.w / 2 - 3.66, self.w / 2 + 3.66], color=self.linecol, linewidth=self.goal_width, zorder=1)
+        ax.plot([0, 0], [self.w / 2 - 3.66, self.w / 2 + 3.66], color=self.linecol, linewidth=self.goal_width, zorder=1)
 
         # Prepare Circles
         centreCircle = plt.Circle((self.l / 2, self.w / 2), 9.15, color=self.linecol, fill=False, linewidth=linewidth)
