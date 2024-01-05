@@ -21,9 +21,10 @@ import matplotlib
 # Pitch as class
 # --------------
 class myPitch:
-    def __init__(self, l=105, w=65, grasscol='#6aa84f', linecol='white', goal_width=5):
-        self.l = l
-        self.w = w
+    def __init__(self, x_range_pitch=(0, 105), y_range_pitch=(0, 68), grasscol='#6aa84f', linecol='white',
+                 goal_width=5):
+        self.x_range_pitch = x_range_pitch
+        self.y_range_pitch = y_range_pitch
         self.grasscol = grasscol
         self.linecol = linecol
         self.goal_width = goal_width
@@ -40,52 +41,87 @@ class myPitch:
         # kwargs which are used to configure the plot with default values 1.5 and 0.
         # all the other kwargs will be just passed to all the plot functions.
         linewidth = kwargs.pop("linewidth", 1.5)
-        #zorder = kwargs.pop("zorder", 0)
+        # zorder = kwargs.pop("zorder", 0)
 
         # check whether an axes to plot is given or if a new axes element has to be created
         ax = ax or plt.subplots()[1]
 
+        # corners of the pitch!
+        # lengths of the pitch (d)
+        x0 = min(self.x_range_pitch)
+        x1 = max(self.x_range_pitch)
+        dx = abs(x1 - x0)
+        y0 = min(self.y_range_pitch)
+        y1 = max(self.y_range_pitch)
+        dy = abs(y1 - y0)
+
+        # midpoint on the line
+        def mp(p1, p2):
+            d = p1 - p2
+            pm = p1 - d / 2
+            return pm
+
+        xm = mp(x0, x1)
+        ym = mp(y0, y1)
+
         ax.patch.set_facecolor(self.grasscol)
+
         # Pitch Outline & Centre Line
-        ax.plot([0, 0], [0, self.w], color=self.linecol, linewidth=linewidth, zorder=1)
-        ax.plot([0, self.l], [self.w, self.w], color=self.linecol, linewidth=linewidth, zorder=1)
-        ax.plot([self.l, self.l], [self.w, 0], color=self.linecol, linewidth=linewidth, zorder=1)
-        ax.plot([self.l, 0], [0, 0], color=self.linecol, linewidth=linewidth, zorder=1)
-        ax.plot([self.l / 2, self.l / 2], [0, self.w], color=self.linecol, linewidth=linewidth, zorder=1)
+        ax.plot([x0, x0], [y0, y1], color=self.linecol, linewidth=linewidth, zorder=1)
+        ax.plot([x0, x1], [y1, y1], color=self.linecol, linewidth=linewidth, zorder=1)
+        ax.plot([x1, x1], [y1, y0], color=self.linecol, linewidth=linewidth, zorder=1)
+        ax.plot([x1, x0], [y0, y0], color=self.linecol, linewidth=linewidth, zorder=1)
+        ax.plot([xm, xm], [y0, y1], color=self.linecol, linewidth=linewidth, zorder=1)
+        # scaling factors
+        sf_l = dx / 105  # length
+        sf_w = dy / 68  # width
+        # All elements are scaled from there assumed size relative to (105, 68) to the new pitch dimensions
 
         # Penalty areas - 7.32*0.5 + 5.5 + 11 = 20.16
         # Left
-        ax.plot([16.5, 16.5], [self.w / 2 + 20.16, self.w / 2 - 20.16], color=self.linecol, linewidth=linewidth, zorder=1)
-        ax.plot([0, 16.5], [self.w / 2 + 20.16, self.w / 2 + 20.16], color=self.linecol, linewidth=linewidth, zorder=1)
-        ax.plot([16.5, 0], [self.w / 2 - 20.16, self.w / 2 - 20.16], color=self.linecol, linewidth=linewidth, zorder=1)
+        ax.plot([x0 + 16.5 * sf_l, x0 + 16.5 * sf_l], [ym + 20.16 * sf_w, ym - 20.16 * sf_w],
+                color=self.linecol, linewidth=linewidth,
+                zorder=1)
+        ax.plot([x0, x0 + 16.5 * sf_l], [ym + 20.16 * sf_w, ym + 20.16 * sf_w], color=self.linecol,
+                linewidth=linewidth, zorder=1)
+        ax.plot([x0 + 16.5 * sf_l, x0], [ym - 20.16 * sf_w, ym - 20.16 * sf_w], color=self.linecol,
+                linewidth=linewidth, zorder=1)
         # Right
-        ax.plot([self.l, self.l - 16.5], [self.w / 2 + 20.16, self.w / 2 + 20.16], color=self.linecol,
+        ax.plot([x1 - 16.5 * sf_l, x1 - 16.5 * sf_l], [ym + 20.16 * sf_w, ym - 20.16 * sf_w], color=self.linecol,
                 linewidth=linewidth, zorder=1)
-        ax.plot([self.l - 16.5, self.l - 16.5], [self.w / 2 + 20.16, self.w / 2 - 20.16], color=self.linecol,
+        ax.plot([x1 - 16.5 * sf_l, x1], [ym + 20.16 * sf_w, ym + 20.16 * sf_w],
+                color=self.linecol,
                 linewidth=linewidth, zorder=1)
-        ax.plot([self.l - 16.5, self.l], [self.w / 2 - 20.16, self.w / 2 - 20.16], color=self.linecol,
+        ax.plot([x1 - 16.5 * sf_l, x1], [ym - 20.16 * sf_w, ym - 20.16 * sf_w], color=self.linecol,
                 linewidth=linewidth, zorder=1)
-
         # 6 yard boxes - 7.32*0.5 + 5.5 = 9.16
         # Left
-        ax.plot([0, 5.5], [self.w / 2 + 9.16, self.w / 2 + 9.16], color=self.linecol, linewidth=linewidth, zorder=1)
-        ax.plot([5.5, 5.5], [self.w / 2 + 9.16, self.w / 2 - 9.16], color=self.linecol, linewidth=linewidth, zorder=1)
-        ax.plot([5.5, 0.5], [self.w / 2 - 9.16, self.w / 2 - 9.16], color=self.linecol, linewidth=linewidth, zorder=1)
-        # Right
-        ax.plot([self.l, self.l - 5.5], [self.w / 2 + 9.16, self.w / 2 + 9.16], color=self.linecol, linewidth=linewidth, zorder=1)
-        ax.plot([self.l - 5.5, self.l - 5.5], [self.w / 2 + 9.16, self.w / 2 - 9.16], color=self.linecol,
+        ax.plot([x0, x0 + 5.5 * sf_l], [ym + 9.16 * sf_w, ym + 9.16 * sf_w], color=self.linecol,
                 linewidth=linewidth, zorder=1)
-        ax.plot([self.l - 5.5, self.l], [self.w / 2 - 9.16, self.w / 2 - 9.16], color=self.linecol, linewidth=linewidth, zorder=1)
+        ax.plot([x0 + 5.5 * sf_l, x0 + 5.5 * sf_l], [ym + 9.16 * sf_w, ym - 9.16 * sf_w], color=self.linecol,
+                linewidth=linewidth, zorder=1)
+        ax.plot([x0 + 5.5 * sf_l, x0], [ym - 9.16 * sf_w, ym - 9.16 * sf_w], color=self.linecol,
+                linewidth=linewidth, zorder=1)
+        # Right
+        ax.plot([x1, x1 - 5.5 * sf_l], [ym + 9.16 * sf_w, ym + 9.16 * sf_w], color=self.linecol,
+                linewidth=linewidth,
+                zorder=1)
+        ax.plot([x1 - 5.5 * sf_l, x1 - 5.5 * sf_l], [ym + 9.16 * sf_w, ym - 9.16 * sf_w], color=self.linecol,
+                linewidth=linewidth, zorder=1)
+        ax.plot([x1 - 5.5 * sf_l, x1], [ym - 9.16 * sf_w, ym - 9.16 * sf_w], color=self.linecol,
+                linewidth=linewidth,
+                zorder=1)
 
         # Goals - 7.32*0.5
-        ax.plot([self.l, self.l], [self.w / 2 - 3.66, self.w / 2 + 3.66], color=self.linecol, linewidth=self.goal_width, zorder=1)
-        ax.plot([0, 0], [self.w / 2 - 3.66, self.w / 2 + 3.66], color=self.linecol, linewidth=self.goal_width, zorder=1)
+        ax.plot([x1, x1], [ym - 3.66 * sf_w, ym + 3.66 * sf_w], color=self.linecol, linewidth=self.goal_width,
+                zorder=1)
+        ax.plot([x0, x0], [ym - 3.66 * sf_w, ym + 3.66 * sf_w], color=self.linecol, linewidth=self.goal_width, zorder=1)
 
         # Prepare Circles
-        centreCircle = plt.Circle((self.l / 2, self.w / 2), 9.15, color=self.linecol, fill=False, linewidth=linewidth)
-        centreSpot = plt.Circle((self.l / 2, self.w / 2), 0.8, color=self.linecol, linewidth=linewidth)
-        leftPenSpot = plt.Circle((11, self.w / 2), 0.8, color=self.linecol, linewidth=linewidth)
-        rightPenSpot = plt.Circle((self.l - 11, self.w / 2), 0.8, color=self.linecol, linewidth=linewidth)
+        centreCircle = plt.Circle((xm, ym), 9.15 * sf_l, color=self.linecol, fill=False, linewidth=linewidth)
+        centreSpot = plt.Circle((xm, ym), 0.8 * sf_l, color=self.linecol, linewidth=linewidth)
+        leftPenSpot = plt.Circle((x0 + 11 * sf_l, ym), 0.6 * sf_l, color=self.linecol, linewidth=linewidth)
+        rightPenSpot = plt.Circle((x1 - 11 * sf_l, ym), 0.6 * sf_l, color=self.linecol, linewidth=linewidth)
 
         # Draw Circles
         ax.add_patch(centreCircle)
@@ -94,18 +130,23 @@ class myPitch:
         ax.add_patch(rightPenSpot)
 
         # Prepare Arcs (9.15m from penalty spot)
-        leftArc = pat.Arc((11, self.w / 2), height=18.3, width=18.3, angle=0, theta1=308, theta2=52, color=self.linecol,
+
+        leftArc = pat.Arc((x0 + 11 * sf_l, ym), height=18.3 * sf_l, width=18.3 * sf_l, angle=0, theta1=308, theta2=52,
+                          color=self.linecol,
                           linewidth=linewidth)
-        rightArc = pat.Arc((self.l - 11, self.w / 2), height=18.3, width=18.3, angle=0, theta1=128, theta2=232,
+        rightArc = pat.Arc((x1 - 11 * sf_l, ym), height=18.3 * sf_l, width=18.3 * sf_l, angle=0, theta1=128, theta2=232,
                            color=self.linecol,
                            linewidth=linewidth)
-        bottomleftArc = pat.Arc((0, 0), height=3.5, width=3.5, angle=0, theta1=0, theta2=90, color=self.linecol,
+        bottomleftArc = pat.Arc((x0, y0), height=3.5 * sf_l, width=3.5 * sf_l, angle=0, theta1=0, theta2=90,
+                                color=self.linecol,
                                 linewidth=linewidth)
-        topleftArc = pat.Arc((0, self.w), height=3.5, width=3.5, angle=0, theta1=270, theta2=360, color=self.linecol,
+        topleftArc = pat.Arc((x0, y1), height=3.5 * sf_l, width=3.5 * sf_l, angle=0, theta1=270, theta2=360,
+                             color=self.linecol,
                              linewidth=linewidth)
-        bottomrightArc = pat.Arc((self.l, 0), height=3.5, width=3.5, angle=0, theta1=90, theta2=180, color=self.linecol,
+        bottomrightArc = pat.Arc((x1, y0), height=3.5 * sf_l, width=3.5 * sf_l, angle=0, theta1=90, theta2=180,
+                                 color=self.linecol,
                                  linewidth=linewidth)
-        toprightArc = pat.Arc((self.l, self.w), height=3.5, width=3.5, angle=0, theta1=180, theta2=270,
+        toprightArc = pat.Arc((x1, y1), height=3.5 * sf_l, width=3.5 * sf_l, angle=0, theta1=180, theta2=270,
                               color=self.linecol,
                               linewidth=linewidth)
 

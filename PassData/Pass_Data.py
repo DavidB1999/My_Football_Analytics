@@ -1,3 +1,4 @@
+import logging
 import sys
 
 sys.path.append('C:\\Users\\DavidB\\PycharmProjects\\My_Football_Analytics')
@@ -15,6 +16,7 @@ from PIL import Image
 import numpy as np
 import re
 import warnings
+import logging
 
 
 # ------------------------------------------------------------------------
@@ -25,7 +27,7 @@ class pass_data():
 
     def __init__(self, data, data_source=None, x_range_data=None, y_range_data=None, team_col='team',
                  location_col=None, end_location_key=None, pass_col=None, player_col=None, teams=None,
-                 scale_to_pitch='mplsoccer', x_range_pitch=None, y_range_pitch=None, rel_eve_col=None,
+                 scale_to_pitch='myPitch', x_range_pitch=None, y_range_pitch=None, rel_eve_col=None,
                  mirror_away=['x', 'y'], type_key=None, outcome_key=None, minute_col=None, second_col=None,
                  shot_ass_key=None, goal_ass_key=None, cross_key=None, cutback_key=None, switch_key=None,
                  play_pattern_col=None, half_col=None, receiver_key=None):
@@ -120,12 +122,15 @@ class pass_data():
         self.filter1 = data[self.team_column] == self.home_team
         self.filter2 = data[self.team_column] == self.away_team
 
+        # get the intended range for the coordinates based on selected pitch type
         self.supported_pitch_types = ['mplsoccer', 'myPitch']
         if self.scale_to_pitch == 'mplsoccer':
-            if self.x_range_pitch is None:
-                self.x_range_pitch = (0, 120)
-            if self.y_range_pitch is None:
-                self.y_range_pitch = (80, 0)
+            if self.x_range_pitch or self.y_range_pitch:
+                logging.warning("mplsoccer pitch does not allow for a rescaling of the pitch. Axis ranges remain as"
+                              "(0, 120) for x and (80, 0) for y!")
+            self.x_range_pitch = (0, 120)
+            self.y_range_pitch = (80, 0)
+
         elif self.scale_to_pitch == 'myPitch':
             if self.x_range_pitch is None:
                 self.x_range_pitch = (0, 105)
@@ -327,7 +332,7 @@ class pass_data():
             fig.set_facecolor(pitch_col)
             pitch.draw(ax=ax)
         elif self.scale_to_pitch == 'myPitch':
-            pitch = myPitch(grasscol=pitch_col)
+            pitch = myPitch(grasscol=pitch_col, x_range_pitch=self.x_range_pitch, y_range_pitch=self.y_range_pitch)
             fig, ax = plt.subplots()  # figsize=(13.5, 8)
             fig.set_facecolor(pitch_col)
             pitch.plot_pitch(ax=ax)
@@ -383,7 +388,7 @@ class pass_data():
             fig.set_facecolor(pitch_col)
             pitch.draw(ax=ax)
         elif self.scale_to_pitch == 'myPitch':
-            pitch = myPitch(grasscol=pitch_col)
+            pitch = myPitch(grasscol=pitch_col, x_range_pitch=self.x_range_pitch, y_range_pitch=self.y_range_pitch)
             fig, ax = plt.subplots()  # figsize=(13.5, 8)
             fig.set_facecolor(pitch_col)
             pitch.plot_pitch(ax=ax)

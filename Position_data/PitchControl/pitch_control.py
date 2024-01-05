@@ -11,10 +11,11 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import torch
 from torch.nn.functional import softplus
+import logging
 
 
 ################################################################################################################
-# Laurie Shaw implememtation #####################################################################################
+# Laurie Shaw implementation #####################################################################################
 ################################################################################################################
 
 # class player to bundle all steps for each player
@@ -269,7 +270,7 @@ def pitch_control_at_frame(frame, td_object, n_grid_cells_x=50, offside=False, a
     else:
         raise ValueError('team must be either "Home" or "Away"!')
 
-    # calculate pitch pitch control model at each location on the pitch
+    # calculate pitch control model at each location on the pitch
     for i in range(len(ygrid)):
         for j in range(len(xgrid)):
             target_position = np.array([xgrid[j], ygrid[i]])
@@ -408,7 +409,7 @@ def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Hom
         fig.set_facecolor(pitch_col)
         pitch.draw(ax=ax)
     elif td_object.scale_to_pitch == 'myPitch':
-        pitch = myPitch(grasscol=pitch_col)
+        pitch = myPitch(grasscol=pitch_col, x_range_pitch=td_object.x_range_pitch, y_range_pitch=td_object.y_range_pitch)
         fig, ax = plt.subplots()  # figsize=(13.5, 8)
         fig.set_facecolor(pitch_col)
         pitch.plot_pitch(ax=ax)
@@ -1010,19 +1011,19 @@ def animate_tensor_pitch_control(td_object, version='Spearman', pitch_control=No
     writer = FFMpegWriter(fps=frames_per_second, metadata=metadata)
 
     # create pitch
+
     if td_object.scale_to_pitch == 'mplsoccer':
         pitch = Pitch(pitch_color=pitch_col, line_color=line_col)
         fig, ax = plt.subplots()
         fig.set_facecolor(pitch_col)
         pitch.draw(ax=ax)
     elif td_object.scale_to_pitch == 'myPitch':
-        pitch = myPitch(grasscol=pitch_col)
+        pitch = myPitch(grasscol=pitch_col, x_range_pitch=td_object.x_range_pitch, y_range_pitch=td_object.y_range_pitch)
         fig, ax = plt.subplots()  # figsize=(13.5, 8)
         fig.set_facecolor(pitch_col)
         pitch.plot_pitch(ax=ax)
     else:
         raise ValueError(f'Unfortunately the pitch {td_object.scale_to_pitch} is not yet supported by this function!')
-
     fig.set_tight_layout(True)
     print("Generating your clip...")  # , end=''
 

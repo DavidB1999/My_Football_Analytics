@@ -3,6 +3,8 @@ import sys
 sys.path.append('C:\\Users\\DavidB\\PycharmProjects\\My_Football_Analytics')
 import pandas as pd
 import numpy as np
+import warnings
+import logging
 from Basics.Pitch.My_Pitch import myPitch  # might need adaptation of path depending on whether it is used in pycharm
 # or jupyter notebook
 from mplsoccer import Pitch
@@ -27,6 +29,7 @@ class tracking_data:
         self.scale_to_pitch = scale_to_pitch
         self.home = home
         self.away = away
+        self.got_velocities = False
 
         # selfs preparing for conditional assignment
         self.x_range_data = x_range_data
@@ -94,10 +97,12 @@ class tracking_data:
         # get the intended range for the coordinates based on selected pitch type
         self.supported_pitch_types = ['mplsoccer', 'myPitch']
         if self.scale_to_pitch == 'mplsoccer':
-            if self.x_range_pitch is None:
-                self.x_range_pitch = (0, 120)
-            if self.y_range_pitch is None:
-                self.y_range_pitch = (80, 0)
+            if self.x_range_pitch or self.y_range_pitch:
+                logging.warning("mplsoccer pitch does not allow for a rescaling of the pitch. Axis ranges remain as"
+                                "(0, 120) for x and (80, 0) for y!")
+            self.x_range_pitch = (0, 120)
+            self.y_range_pitch = (80, 0)
+
         elif self.scale_to_pitch == 'myPitch':
             if self.x_range_pitch is None:
                 self.x_range_pitch = (0, 105)
@@ -220,13 +225,20 @@ class tracking_data:
 
     def plot_players(self, frame, pitch_col='#1c380e', line_col='white', colors=['red', 'blue', 'black'],
                      velocities=False, PlayerAlpha=0.7):
+
+        # ensure velocities exist if to be plotted
+        if velocities and self.got_velocities:
+            pass
+        else:
+            self.get_velocities()
+
         if self.scale_to_pitch == 'mplsoccer':
             pitch = Pitch(pitch_color=pitch_col, line_color=line_col)
             fig, ax = plt.subplots()
             fig.set_facecolor(pitch_col)
             pitch.draw(ax=ax)
         elif self.scale_to_pitch == 'myPitch':
-            pitch = myPitch(grasscol=pitch_col)
+            pitch = myPitch(grasscol=pitch_col, x_range_pitch=self.x_range_pitch, y_range_pitch=self.y_range_pitch)
             fig, ax = plt.subplots()  # figsize=(13.5, 8)
             fig.set_facecolor(pitch_col)
             pitch.plot_pitch(ax=ax)
@@ -310,6 +322,8 @@ class tracking_data:
                 data[player + "_vx"] = vx
                 data[player + "_vy"] = vy
                 data[player + "_speed"] = np.sqrt(vx ** 2 + vy ** 2)
+
+        self.got_velocities = True
 
         if proxy:
             self.data = data

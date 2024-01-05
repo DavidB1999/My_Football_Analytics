@@ -1,5 +1,11 @@
+import sys
+sys.path.append('C:\\Users\\DavidB\\PycharmProjects\\My_Football_Analytics')
+
 import numpy as np
 from epv_utils import is_between
+from Basics.Pitch.My_Pitch import myPitch
+from mplsoccer import Pitch
+import matplotlib.pyplot as plt
 
 
 def get_EPV_grid(fname, fpath='grids', as_class=True, origin=None):
@@ -25,7 +31,7 @@ class EPV_Grid:
             self.dimensions = grid.shape
             print('Dimensions were not supplied and hence derived from the shape of the grid!')
         else:
-            self.dimensions = dimensions
+            self.dimensions = dimensions  # (ny, nx)
         self.origin = origin
         self.x_range = x_range
         self.y_range = y_range
@@ -69,6 +75,21 @@ class EPV_Grid:
             cx = abs(x_range[0] - x) / abs(x_range[0] - x_range[1]) * nx
             cy = abs(y_range[0] - y) / abs(y_range[0] - y_range[1]) * ny
             return (cy, cx), grid[int(cy), int(cx)]
+
+
+    def plot_grid(self, pitch_type,pitch_col='white', line_col='#444444'):
+
+        # plot pitch
+        if self.scale_to_pitch == 'mplsoccer':
+            pitch = Pitch(pitch_color=pitch_col, line_color=line_col, )
+            fig, ax = plt.subplots()
+            fig.set_facecolor(pitch_col)
+            pitch.draw(ax=ax)
+        elif self.scale_to_pitch == 'myPitch':
+            pitch = myPitch(grasscol=pitch_col)
+            fig, ax = plt.subplots()  # figsize=(13.5, 8)
+            fig.set_facecolor(pitch_col)
+            pitch.plot_pitch(ax=ax)
 
 
 
