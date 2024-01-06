@@ -13,6 +13,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from PIL import Image
 import numpy as np
+import logging
 
 
 # --------------------------------------------------------------------------------------
@@ -22,7 +23,7 @@ import numpy as np
 class shot_data:
     def __init__(self, data, data_source=None, x_range_data=None, y_range_data=None, team_col='team',
                  x_col=None, y_col=None, xg_col=None, minute_col=None, result_col=None, player_col=None,
-                 scale_to_pitch='mplsoccer', x_range_pitch=None, y_range_pitch=None,
+                 scale_to_pitch='myPitch', x_range_pitch=None, y_range_pitch=None,
                  mirror_away=['x', 'y'], location_col=None, shot_col=None, xg_key=None, end_location_key=None,
                  outcome_key=None, teams=None):
         # we need these attributes later independent of data source
@@ -55,13 +56,15 @@ class shot_data:
         self.end_location_key = end_location_key
         self.outcome_key = outcome_key
 
-        # supported pitch types have a default data range to which data can be rescaled
-        supported_pitch_types = ['mplsoccer', 'myPitch']
+        # get the intended range for the coordinates based on selected pitch type
+        self.supported_pitch_types = ['mplsoccer', 'myPitch']
         if self.scale_to_pitch == 'mplsoccer':
-            if self.x_range_pitch is None:
-                self.x_range_pitch = (0, 120)
-            if self.y_range_pitch is None:
-                self.y_range_pitch = (80, 0)
+            if self.x_range_pitch or self.y_range_pitch:
+                logging.warning("mplsoccer pitch does not allow for a rescaling of the pitch. Axis ranges remain as"
+                                "(0, 120) for x and (80, 0) for y!")
+            self.x_range_pitch = (0, 120)
+            self.y_range_pitch = (80, 0)
+
         elif self.scale_to_pitch == 'myPitch':
             if self.x_range_pitch is None:
                 self.x_range_pitch = (0, 105)
@@ -70,7 +73,7 @@ class shot_data:
         elif (self.x_range_pitch is None) or (self.y_range_pitch is None):
             raise ValueError(f'You have not selected a pitch type to which the data is supposed to be scaled.'
                              f'Neither did you supply custom ranges via "x_range_pitch" and "y_range_pitch"'
-                             f'Either supply one of {supported_pitch_types} to "scale_to_pitch" or '
+                             f'Either supply one of {self.supported_pitch_types} to "scale_to_pitch" or '
                              f'Supply tuples of data ranges to "x_range_pitch" and "y_range_pitch".')
 
         supported_data_source = ['Understat', 'Statsbomb']
@@ -289,7 +292,7 @@ class shot_data:
     # ----------------------------------
     def static_shotmap(self, pitch_type='mplsoccer', point_size_range=(20, 500),
                        markers={'SavedShot': "^", 'MissedShots': 'o', 'BlockedShot': "v", 'Goal': '*',
-                                'OwnGoal': 'X', 'ShotOnPost': "h"},
+                                'OwnGoal': 'X', 'ShotOnPost': "h"}, pitch_col='#85cb90', line_col='white',
                        alpha=0.5, color1='red', color2='blue',
                        xg_text=True, xg_text_x=None, xg_text_y=None,
                        result_text=True, result_text_x=None, result_text_y=None,
@@ -297,14 +300,18 @@ class shot_data:
                        home_image=None, away_image=None, logo_x=None, logo_y=None):
 
         # create pitch!
-        if pitch_type == 'mplsoccer':
-            pitch = Pitch(pitch_color='grass', line_color='white', stripe=True)
-            fig, ax = pitch.draw()
-        elif pitch_type == 'myPitch':
-            pitch = myPitch()
+        if self.scale_to_pitch == 'mplsoccer':
+            pitch = Pitch(pitch_color=pitch_col, line_color=line_col)
             fig, ax = plt.subplots()
+            fig.set_facecolor(pitch_col)
+            pitch.draw(ax=ax)
+        elif self.scale_to_pitch == 'myPitch':
+            pitch = myPitch(grasscol=pitch_col, x_range_pitch=self.x_range_pitch, y_range_pitch=self.y_range_pitch)
+            fig, ax = plt.subplots()  # figsize=(13.5, 8)
+            fig.set_facecolor(pitch_col)
             pitch.plot_pitch(ax=ax)
-
+        else:
+            raise ValueError(f'Unfortunately the pitch {self.scale_to_pitch} is not yet supported by this function!')
         # scatter shots
         sns.scatterplot(data=self.data, x=self.x_col, y=self.y_col, hue=self.team_column,
                         style=self.result_col, size=self.xg_col, sizes=point_size_range,
@@ -424,13 +431,13 @@ class shot_data:
     # ----------------------------------
     # an interactive shotmap with plotly
     # ----------------------------------
-    def interactive_shotmap(self, color1='red', color2='blue', pitch_type='mplsoccer', background_col='#435348',
+    def interactive_shotmap(self, color1='red', color2='blue', pitch_type='mplsoccer', background_col='#16745b',
                             pitch_x0=None, pitch_y0=None, size_multiplicator=5, title=None, title_col='white',
                             xg_text=True, xg_text_x=None, xg_text_y=None, margins=None,
                             result_text=True, result_text_x=None, result_text_y=None,
                             name_text=True, name_text_x=None, name_text_y=None,
                             home_image=None, away_image=None, logo_x=None, logo_y=None,
-                            axis_visible=False, pitch_path=''):
+                            axis_visible=False, pitch_path='', pitch_col='#85cb90', line_col='white',):
         supported_pitch_types = ['mplsoccer', 'myPitch']
         if self.data_source == 'Understat':
             markers = {'SavedShot': "triangle-up", 'MissedShots': 'circle', 'BlockedShot': "triangle-down",
@@ -467,7 +474,7 @@ class shot_data:
             # 0 + 65 + (-2*(65 - 68.2)) = 71.4 | 80 + 0 (-2*(0 -3.75)) = 87.5
             pitch_sy = self.y_range_pitch[0] + self.y_range_pitch[1] + (-2 * (min(self.y_range_pitch) + pitch_y0))
 
-            pitch = Pitch(pitch_color='grass', line_color='white', stripe=True)
+            pitch = Pitch(pitch_color=pitch_col, line_color=line_col, stripe=True)
             fig_p, ax = pitch.draw()
         elif pitch_type == 'myPitch':
             aa = True
@@ -477,7 +484,7 @@ class shot_data:
                 pitch_y0 = 68.2
             pitch_sx = self.x_range_pitch[0] + self.x_range_pitch[1] + (-2 * (min(self.x_range_pitch) + pitch_x0))
             pitch_sy = self.y_range_pitch[0] + self.y_range_pitch[1] + (-2 * (min(self.y_range_pitch) + pitch_y0))
-            pitch = myPitch()
+            pitch = myPitch(grasscol=pitch_col, x_range_pitch=self.x_range_pitch, y_range_pitch=self.y_range_pitch)
             fig_p, ax = plt.subplots()
             pitch.plot_pitch(ax=ax)
         else:
