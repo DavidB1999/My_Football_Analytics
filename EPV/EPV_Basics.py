@@ -7,9 +7,11 @@ from epv_utils import is_between
 from Basics.Pitch.My_Pitch import myPitch
 from mplsoccer import Pitch
 import matplotlib.pyplot as plt
+import torch
+import Position_data.PitchControl.pitch_control as pc
 
 
-def get_EPV_grid(fname, fpath='grids', as_class=True, origin=None, td_object=None, team='home'):
+def get_EPV_grid(fname, fpath='grids', as_class=True, origin=None, td_object=None, team='Home'):
     # get complete path for grid file
     if fpath:
         fname = fpath + '//' + fname
@@ -25,7 +27,7 @@ def get_EPV_grid(fname, fpath='grids', as_class=True, origin=None, td_object=Non
 
 class EPV_Grid:
     def __init__(self, grid, grid_dimensions=None, origin=None, td_object=None, x_range=None, y_range=None,
-                 scale_to_pitch=None, team='home'):
+                 scale_to_pitch=None, team='Home'):
 
         self.grid = grid
         if grid_dimensions:
@@ -48,12 +50,14 @@ class EPV_Grid:
                              'and y_range as well as pitch type manually.')
         self.team = team
         if self.td_object:
-            if self.team == 'home' or self.team == 'Home':
+            if self.team == 'Home':
                 self.playing_direction = self.td_object.playing_direction_home
-            elif self.team == 'away' or self.team == 'Away':
+            elif self.team == 'Away':
                 self.playing_direction = self.td_object.playing_direction_away
             else:
                 raise ValueError('teams should be either "Home" or "Away" as defined in td_object!')
+
+        self.AV_grid = None
 
     def __str__(self):
         if self.origin:
@@ -111,3 +115,81 @@ class EPV_Grid:
                   vmin=0.0, vmax=0.6, cmap='Greens', alpha=0.6)
 
         return fig, ax
+
+    def get_AV_grid(self, frame, pc_version='Spearman', pc_implementation='GL', pc_reaction_time=0.7,
+                    pc_max_player_speed=None, pc_average_ball_speed=15, pc_sigma=0.45, pc_lambda=4.3, pc_device='cpu',
+                    pc_first_frame_calc=0, pc_last_frame_calc=250, pc_batch_size=250, pc_reference='x',
+                    pc_assumed_reference_x=105, pc_assumed_reference_y=68):
+
+        pitch_control_grid = pc.tensor_pitch_control(td_object=self.td_object, version=pc_version,
+                                                     implementation=pc_implementation, jitter=1e-12,
+                                                     pos_nan_to=-1000, vel_nan_to=0, remove_first_frames=0,
+                                                     reaction_time=pc_reaction_time,
+                                                     max_player_speed=pc_max_player_speed,
+                                                     average_ball_speed=pc_average_ball_speed, sigma=pc_sigma,
+                                                     lamb=pc_lambda, n_grid_points_x=self.grid_dimensions[0],
+                                                     n_grid_points_y=self.grid_dimensions[1], device=pc_device,
+                                                     dtype=torch.float32, first_frame=pc_first_frame_calc,
+                                                     last_frame=pc_last_frame_calc, batch_size=pc_batch_size,
+                                                     deg=50, max_int=500, team=self.team, return_pcpp=False,
+                                                     fix_tti=True, reference=pc_reference,
+                                                     assumed_reference_x=pc_assumed_reference_x,
+                                                     assumed_reference_y=pc_assumed_reference_y)
+
+        # if Fernandez we need to adapt dimensions of pc tensor
+        if pc_version == 'Fernandez':
+            pitch_control_grid = pitch_control_grid.reshape(pitch_control_grid.shape[0], self.grid_dimensions[0],
+                                                            self.grid_dimensions[1])
+        pitch_control_grid = pitch_control_grid[frame - pc_first_frame_calc]
+        AV_grid = pitch_control_grid * self.grid
+
+        return AV_grid
+
+    def plot_AV_grid(self, frame, AV_grid=None, pc_version='Spearman', pc_implementation='GL', pc_reaction_time=0.7,
+                     pc_max_player_speed=None, pc_average_ball_speed=15, pc_sigma=0.45, pc_lambda=4.3, pc_device='cpu',
+                     pc_first_frame_calc=0, pc_last_frame_calc=250, pc_batch_size=250, pc_reference='x',
+                     pc_assumed_reference_x=105, pc_assumed_reference_y=68, cmap='Blues'):
+
+        frame_number = frame - pc_first_frame_calc
+
+        # plot players
+        if AV_grid:
+            pass
+        else:
+            pitch_control_grid = pc.tensor_pitch_control(td_object=self.td_object, version=pc_version,
+                                                         implementation=pc_implementation, jitter=1e-12,
+                                                         pos_nan_to=-1000, vel_nan_to=0, remove_first_frames=0,
+                                                         reaction_time=pc_reaction_time,
+                                                         max_player_speed=pc_max_player_speed,
+                                                         average_ball_speed=pc_average_ball_speed, sigma=pc_sigma,
+                                                         lamb=pc_lambda, n_grid_points_x=self.grid_dimensions[0],
+                                                         n_grid_points_y=self.grid_dimensions[1], device=pc_device,
+                                                         dtype=torch.float32, first_frame=pc_first_frame_calc,
+                                                         last_frame=pc_last_frame_calc, batch_size=pc_batch_size,
+                                                         deg=50, max_int=500, team=self.team, return_pcpp=False,
+                                                         fix_tti=True, reference=pc_reference,
+                                                         assumed_reference_x=pc_assumed_reference_x,
+                                                         assumed_reference_y=pc_assumed_reference_y)
+        # if Fernandez we need to adapt dimensions of pc tensor
+        if pc_version == 'Fernandez':
+            pitch_control_grid = pitch_control_grid.reshape(pitch_control_grid.shape[0], self.grid_dimensions[0],
+                                                            self.grid_dimensions[1])
+        pitch_control_grid = pitch_control_grid[frame_number]
+        AV_grid = pitch_control_grid * self.grid
+
+        fig, ax = self.td_object.plot_players(frame=frame_number, velocities=True)
+
+        if pc_version == 'Spearman':
+            ax.imshow(np.flipud(AV_grid.rot90()), extent=(
+                self.td_object.x_range_pitch[0], self.td_object.x_range_pitch[1], self.td_object.y_range_pitch[0],
+                self.td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0, origin='lower')
+        elif pc_version == 'Fernandez':
+            ax.imshow(AV_grid, extent=(
+                self.td_object.x_range_pitch[0], self.td_object.x_range_pitch[1], self.td_object.y_range_pitch[0],
+                self.td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0, origin='lower')
+        else:
+            raise ValueError(f'{version} is not a valid version. Chose either "Fernandez" or "Spearman"')
+
+        return fig, ax
+
+

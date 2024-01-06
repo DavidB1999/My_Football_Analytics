@@ -238,7 +238,7 @@ class tracking_data:
             fig.set_facecolor(pitch_col)
             pitch.draw(ax=ax)
         elif self.scale_to_pitch == 'myPitch':
-            pitch = myPitch(grasscol=pitch_col, line_color=line_col, x_range_pitch=self.x_range_pitch, y_range_pitch=self.y_range_pitch)
+            pitch = myPitch(grasscol=pitch_col, linecol=line_col, x_range_pitch=self.x_range_pitch, y_range_pitch=self.y_range_pitch)
             fig, ax = plt.subplots()  # figsize=(13.5, 8)
             fig.set_facecolor(pitch_col)
             pitch.plot_pitch(ax=ax)
