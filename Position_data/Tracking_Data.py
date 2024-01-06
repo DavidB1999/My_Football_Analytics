@@ -107,7 +107,7 @@ class tracking_data:
             if self.x_range_pitch is None:
                 self.x_range_pitch = (0, 105)
             if self.y_range_pitch is None:
-                self.y_range_pitch = (0, 65)
+                self.y_range_pitch = (0, 68)
         elif (self.x_range_pitch is None) or (self.y_range_pitch is None):
             raise ValueError(f'You have not selected a pitch type to which the data is supposed to be scaled.'
                              f'Neither did you supply custom ranges via "x_range_pitch" and "y_range_pitch"'

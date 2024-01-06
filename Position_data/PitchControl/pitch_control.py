@@ -21,7 +21,7 @@ import logging
 # class player to bundle all steps for each player
 def get_player_from_data(td_object, pid, team, data=None, frame=None, params=None):
     if params is None:
-        params = default_model_params()
+        params = default_model_params(td_object=td_object)
     if data is None:
         data = td_object.data
     GK = str(pid) == td_object.Home_GK if team == 'Home' else str(pid) == td_object.Away_GK
@@ -41,7 +41,7 @@ def get_player_from_data(td_object, pid, team, data=None, frame=None, params=Non
 
 def get_all_players(td_object, frame=None, teams=['Home', 'Away'], params=None):
     if params is None:
-        params = default_model_params()
+        params = default_model_params(td_object=td_object)
     # ensure velocities are available
     td_object.get_velocities()
     data = td_object.data
@@ -115,13 +115,33 @@ def check_offside(td_object, frame, attacking_team, verbose=False, tol=0.2):
 
 ################################################################################################################
 
-def default_model_params(time_to_control_veto=3, mpa=7, mps=5, rt=0.7, tti_s=0.45, kappa_def=1,
-                         lambda_att=4.3, kappa_gk=3, abs=15, dt=0.04, mit=10, model_converge_tol=0.01):
+def default_model_params(td_object, time_to_control_veto=3, mpa=7, mps=5, rt=0.7, tti_s=0.45, kappa_def=1,
+                         lambda_att=4.3, kappa_gk=3, av_bs=15, dt=0.04, mit=10, model_converge_tol=0.01,
+                         assumed_reference_x=105, assumed_reference_y=68, reference='x'):
+    # determine a scaling factor for velocity parameters to assure consistency
+    # of pitch control results across different dimension selections
+    # Obviously this mixes up meters (velocity) and pitch units (dimensions)
+    # But unless we know the correct size of each matches' pitch and its relation to the units in the position data
+    # this is the best estimation; at least for consistency
+    # We can scale by either x or y length of the pitch; this introduces additional inaccuracy if
+    # x and y change in their relative magnitude
+    if reference == 'x' or reference == 'X':
+        pitch_dim0, pitch_dim1 = td_object.dimensions['x']['pitch']
+        pitch_d = abs(pitch_dim1 - pitch_dim0)
+        sf_params = pitch_d / assumed_reference_x
+    elif reference == 'y' or reference == 'Y':
+        pitch_dim0, pitch_dim1 = td_object.dimensions['y']['pitch']
+        pitch_d = abs(pitch_dim1 - pitch_dim0)
+        sf_params = pitch_d / assumed_reference_y
+    else:
+        raise ValueError('You need to specify the reference axis used for scaling of metric parameters (i.e. velocity)'
+                         ' as either "x" or "y"')
+
     params = dict()
     # model parameters
-    params['max_player_accel'] = mpa  # maximum player acceleration m/s/s, not used in this
+    params['max_player_accel'] = mpa * sf_params  # maximum player acceleration m/s/s, not used in this
     # implementation
-    params['max_player_speed'] = mps  # maximum player speed m/s 
+    params['max_player_speed'] = mps * sf_params  # maximum player speed m/s
     params['reaction_time'] = rt  # seconds, time taken for player to react and change
     # trajectory. Roughly determined as vmax/amax
     params['tti_sigma'] = tti_s  # Standard deviation of sigmoid function in Spearman
@@ -133,7 +153,7 @@ def default_model_params(time_to_control_veto=3, mpa=7, mps=5, rt=0.7, tti_s=0.4
     params['lambda_def'] = lambda_att * params['kappa_def']  # ball control parameter for defending team
     params['lambda_gk'] = params['lambda_def'] * kappa_gk  # make goal keepers must quicker to control ball (because
     # they can catch it)
-    params['average_ball_speed'] = abs  # average ball travel speed in m/s
+    params['average_ball_speed'] = av_bs * sf_params  # average ball travel speed in m/s
     # numerical parameters for model evaluation
     params['int_dt'] = dt  # integration timestep (dt)
     params['max_int_time'] = mit  # upper limit on integral time
@@ -151,14 +171,15 @@ def default_model_params(time_to_control_veto=3, mpa=7, mps=5, rt=0.7, tti_s=0.4
 ################################################################################################################
 
 class player:
-    def __init__(self, data, pid, GK, team, params=None, frame=None):
+    def __init__(self, data, pid, GK, team, params=None, frame=None, td_object=None):
         self.id = str(pid)
         self.org_data = data
         self.team = team
         self.GK = GK
         self.frame = frame
         if params is None:
-            self.params = default_model_params()
+            assert td_object, "You need to specify the params or provide a td_object from which params can be derived!"
+            self.params = default_model_params(td_object=td_object)
         else:
             self.params = params
         self.player_name = '_'.join([self.team, self.id])
@@ -228,8 +249,13 @@ class player:
 ################################################################################################################
 
 def pitch_control_at_frame(frame, td_object, n_grid_cells_x=50, offside=False, attacking_team='Home', params=None):
+    if td_object.got_velocities:
+        pass
+    else:
+        td_object.get_velocities()
+
     if params is None:
-        params = default_model_params()
+        params = default_model_params(td_object=td_object)
     data = td_object.data
     x_range = abs(td_object.x_range_pitch[0] - td_object.x_range_pitch[1])
     y_range = abs(td_object.y_range_pitch[0] - td_object.y_range_pitch[1])
@@ -284,9 +310,16 @@ def pitch_control_at_frame(frame, td_object, n_grid_cells_x=50, offside=False, a
 
 ################################################################################################################
 
-def pitch_control_at_target(target_position, attacking_players, defending_players, ball_start_pos, params=None):
+def pitch_control_at_target(target_position, attacking_players, defending_players, ball_start_pos, params=None,
+                            td_object=None):
+    if td_object.got_velocities:
+        pass
+    else:
+        td_object.get_velocities()
+
     if params is None:
-        params = default_model_params()
+        assert td_object, "You need to specify the params or provide a td_object from which params can be derived!"
+        params = default_model_params(td_object=td_object)
 
     # calculate ball travel time from start position to end position.
     if ball_start_pos is None or any(np.isnan(ball_start_pos)):  # assume that ball is already at location
@@ -353,6 +386,11 @@ def pitch_control_at_target(target_position, attacking_players, defending_player
 
 def plot_pitch_control(td_object, frame, attacking_team='Home', PPCF=None, velocities=False, params=None,
                        n_grid_cells_x=50, offside=False):
+    if td_object.got_velocities:
+        pass
+    else:
+        td_object.get_velocities()
+
     if PPCF is None:
         PPCF, xgrid, ygrid = pitch_control_at_frame(frame, td_object, params=params, n_grid_cells_x=n_grid_cells_x,
                                                     offside=offside, attacking_team=attacking_team)
@@ -375,6 +413,11 @@ def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Hom
                           n_grid_cells_x=50, frames_per_second=None, fname='Animated_Clip', pitch_col='#1c380e',
                           line_col='white', colors=['red', 'blue', 'black'], PlayerAlpha=0.7, fpath=None,
                           progress_steps=[0.25, 0.5, 0.75], offside=False):
+    if td_object.got_velocities:
+        pass
+    else:
+        td_object.get_velocities()
+
     if frames_per_second is None:
         frames_per_second = td_object.fps
     data = td_object.data
@@ -409,7 +452,8 @@ def animate_pitch_control(td_object, start_frame, end_frame, attacking_team='Hom
         fig.set_facecolor(pitch_col)
         pitch.draw(ax=ax)
     elif td_object.scale_to_pitch == 'myPitch':
-        pitch = myPitch(grasscol=pitch_col, x_range_pitch=td_object.x_range_pitch, y_range_pitch=td_object.y_range_pitch)
+        pitch = myPitch(grasscol=pitch_col, x_range_pitch=td_object.x_range_pitch,
+                        y_range_pitch=td_object.y_range_pitch)
         fig, ax = plt.subplots()  # figsize=(13.5, 8)
         fig.set_facecolor(pitch_col)
         pitch.plot_pitch(ax=ax)
@@ -489,7 +533,34 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
                          reaction_time=0.7, max_player_speed=None, average_ball_speed=15, sigma=0.45, lamb=4.3,
                          n_grid_points_x=50, n_grid_points_y=30, device='cpu', dtype=torch.float32,
                          first_frame=0, last_frame=500, batch_size=250, deg=50, implementation=None, max_int=500,
-                         team='Home', return_pcpp=False, fix_tti=True):
+                         team='Home', return_pcpp=False, fix_tti=True, reference='x', assumed_reference_x=105,
+                         assumed_reference_y=68):
+    if td_object.got_velocities:
+        pass
+    else:
+        td_object.get_velocities()
+
+    # determine a scaling factor for velocity parameters to assure consistency
+    # of pitch control results across different dimension selections
+    # Obviously this mixes up meters (velocity) and pitch units (dimensions)
+    # But unless we know the correct size of each matches' pitch and its relation to the units in the position data
+    # this is the best estimation; at least for consistency
+    # We can scale by either x or y length of the pitch; this introduces additional inaccuracy if
+    # x and y change in their relative magnitude
+    if reference == 'x' or reference == 'X':
+        pitch_dim0, pitch_dim1 = td_object.dimensions['x']['pitch']
+        pitch_d = abs(pitch_dim1 - pitch_dim0)
+        sf_params = pitch_d / assumed_reference_x
+    elif reference == 'y' or reference == 'Y':
+        pitch_dim0, pitch_dim1 = td_object.dimensions['y']['pitch']
+        pitch_d = abs(pitch_dim1 - pitch_dim0)
+        sf_params = pitch_d / assumed_reference_y
+    else:
+        raise ValueError('You need to specify the reference axis used for scaling of metric parameters (i.e. velocity)'
+                         ' as either "x" or "y"')
+
+    average_ball_speed = average_ball_speed * sf_params
+
     if implementation is None:
         if version == 'Spearman':
             implementation = 'GL'
@@ -530,7 +601,7 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
 
         # standard max speed Spearman = 5
         if max_player_speed is None:
-            max_player_speed = 5
+            max_player_speed = 5 * sf_params
 
         # create the entire exponent of the intercept probability function based on sigma
         exp = np.pi / np.sqrt(3.) / sigma
@@ -693,7 +764,7 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
     elif version == 'Fernandez':
         # standard max speed Fernandez = 13
         if max_player_speed is None:
-            max_player_speed = 13
+            max_player_speed = 13 * sf_params
 
         # get time column
         tt = td_object.data[td_object.time_col]
@@ -728,8 +799,12 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
         Srat_away = torch.min((s_away / max_player_speed) ** 2, torch.Tensor([1]))
 
         # influence radius
-        Ri_home = torch.min(4 + torch.sqrt(torch.sum((xy_ball - xy_home) ** 2, 2)) ** 3 / 972, torch.Tensor([10]))
-        Ri_away = torch.min(4 + torch.sqrt(torch.sum((xy_ball - xy_away) ** 2, 2)) ** 3 / 972, torch.Tensor([10]))
+        min_radius = 4 * sf_params
+        max_radius = 10 * sf_params
+        Ri_home = torch.min(min_radius + torch.sqrt(torch.sum((xy_ball - xy_home) ** 2, 2)) ** 3 / 972
+                            , torch.Tensor([max_radius]))
+        Ri_away = torch.min(min_radius + torch.sqrt(torch.sum((xy_ball - xy_away) ** 2, 2)) ** 3 / 972
+                            , torch.Tensor([max_radius]))
 
         # create tensor with zeros to be filled
         RSinv_home = torch.Tensor(s_home.shape[0], s_home.shape[1], 2, 2)
@@ -840,6 +915,11 @@ def plot_tensor_pitch_control(td_object, frame, pitch_control=None, version='Spe
                               device='cpu', dtype=torch.float32, first_frame=0, last_frame=500, batch_size=250, deg=50,
                               implementation=None, max_int=500, cmap=None, velocities=True, flip_y=None, team='Home',
                               fix_tti=True):
+    if td_object.got_velocities:
+        pass
+    else:
+        td_object.get_velocities()
+
     if implementation is None:
         if version == 'Spearman':
             implementation = 'GL'
@@ -939,6 +1019,11 @@ def animate_tensor_pitch_control(td_object, version='Spearman', pitch_control=No
                                  fpath=None, fname='Animation', pitch_col='#1c380e', line_col='white',
                                  colors=['red', 'blue', 'black'], PlayerAlpha=0.7, first_frame_ani=0,
                                  last_frame_ani=100, fix_tti=True):
+    if td_object.got_velocities:
+        pass
+    else:
+        td_object.get_velocities()
+
     if implementation is None:
         if version == 'Spearman':
             implementation = 'GL'
@@ -967,8 +1052,6 @@ def animate_tensor_pitch_control(td_object, version='Spearman', pitch_control=No
         data = data.iloc[first_frame_ani - 1: last_frame_ani]
     index = data.index
     index_range = last_frame_ani - first_frame_ani
-    print(index)
-    print(index_range)
 
     # determine colormap
     if cmap is None:
@@ -1018,7 +1101,8 @@ def animate_tensor_pitch_control(td_object, version='Spearman', pitch_control=No
         fig.set_facecolor(pitch_col)
         pitch.draw(ax=ax)
     elif td_object.scale_to_pitch == 'myPitch':
-        pitch = myPitch(grasscol=pitch_col, x_range_pitch=td_object.x_range_pitch, y_range_pitch=td_object.y_range_pitch)
+        pitch = myPitch(grasscol=pitch_col, x_range_pitch=td_object.x_range_pitch,
+                        y_range_pitch=td_object.y_range_pitch)
         fig, ax = plt.subplots()  # figsize=(13.5, 8)
         fig.set_facecolor(pitch_col)
         pitch.plot_pitch(ax=ax)
