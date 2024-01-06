@@ -23,7 +23,7 @@ import logging
 # pass data as its own class with functions to rescale and create shot map
 # ------------------------------------------------------------------------
 
-class pass_data():
+class pass_data:
 
     def __init__(self, data, data_source=None, x_range_data=None, y_range_data=None, team_col='team',
                  location_col=None, end_location_key=None, pass_col=None, player_col=None, teams=None,
@@ -127,7 +127,7 @@ class pass_data():
         if self.scale_to_pitch == 'mplsoccer':
             if self.x_range_pitch or self.y_range_pitch:
                 logging.warning("mplsoccer pitch does not allow for a rescaling of the pitch. Axis ranges remain as"
-                              "(0, 120) for x and (80, 0) for y!")
+                                "(0, 120) for x and (80, 0) for y!")
             self.x_range_pitch = (0, 120)
             self.y_range_pitch = (80, 0)
 
@@ -135,7 +135,7 @@ class pass_data():
             if self.x_range_pitch is None:
                 self.x_range_pitch = (0, 105)
             if self.y_range_pitch is None:
-                self.y_range_pitch = (0, 65)
+                self.y_range_pitch = (0, 68)
         elif (self.x_range_pitch is None) or (self.y_range_pitch is None):
             raise ValueError(f'You have not selected a pitch type to which the data is supposed to be scaled.'
                              f'Neither did you supply custom ranges via "x_range_pitch" and "y_range_pitch"'

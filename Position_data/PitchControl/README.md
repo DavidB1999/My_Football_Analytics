@@ -67,14 +67,20 @@ Functional equivalent to Shaw's *initialise_players*-function, creating a player
 
 
 ### default_model_params
-                        (time_to_control_veto=3, mpa=7, mps=5, rt=0.7, tti_s=0.45, kappa_def=1,       
-                         lambda_att=4.3, kappa_gk=3, abs=15, dt=0.04, mit=10, model_converge_tol=0.01)
+                        (td_object, time_to_control_veto=3, mpa=7, mps=5, rt=0.7, tti_s=0.45, kappa_def=1,
+                         lambda_att=4.3, kappa_gk=3, av_bs=15, dt=0.04, mit=10, model_converge_tol=0.01,
+                         assumed_reference_x=105, assumed_reference_y=68, reference='x')
 
 Function to define standard parameters for the pitch control modelling process. Largely the same as Shaw's function. <br>
-Parameter descriptions are copied from https://github.com/Friends-of-Tracking-Data-FoTD/LaurieOnTracking/blob/master/Metrica_PitchControl.py. 
+Parameter descriptions are copied from https://github.com/Friends-of-Tracking-Data-FoTD/LaurieOnTracking/blob/master/Metrica_PitchControl.py. <br>
+Distance-related parameters (i.e. velocities and distances) are scaled by the pitch dimensions to keep pitch control results consistent independent of dimensions chosen.
+Obviously this mixes up meters (velocity) and pitch units (dimensions). 
+But unless we know the correct size of each matches' pitch and its relation to the units in the position data this is the best estimation; at least for consistency.
+We can scale by either x or y length of the pitch; this introduces additional inaccuracy if x and y change in their relative magnitude.
 
 **Parameters**
 
++ *td_object (tracking_data class object)* - An object of the tracking_data class containing data and all required attributes. Specifically the pitch dimensions.
 + *time_to_control_veto (float)* - "If the probability that another team or player can get to the ball and control it is less than 10^-time_to_control_veto, ignore that player."
 + *mpa (float)* -  "maximum player acceleration m/s/s, not used in this"
 + *mps (float)* -  "maximum player speed m/s"
@@ -87,6 +93,8 @@ Parameter descriptions are copied from https://github.com/Friends-of-Tracking-Da
 + *dt (float)* - int_dt: "integration timestep (dt)"
 + *mit (float)* - max_int_time: "upper limit on integral time"
 + *model_converge_tol (float)* - "assume convergence when PPCF>0.99 at a given location"
++ *assumed_reference_x* and *assumed_reference_y (float)* - assumed x/y-length of the pitch on which the original parameters are based
++ *reference (str)* - dimension based on which length the paramaters are to be scaled (either "x" or "y")
 
 **Returns**
 
@@ -109,6 +117,7 @@ for (manual) initiation:
 + *team (str)* - Is the player from the home or away team?
 + *params (dict)* - Model params dictionary as created by function *defaul_model_params*
 + *frame (int)* - Frame number if just one frame
++ *td_object (tracking_data class object)* - An object of the tracking_data class containing data and all required attributes. Specifically the pitch dimensions.
 
 other attributes:
 
@@ -267,11 +276,18 @@ This can take quite a while so a small number of frames and the use of *progress
                          reaction_time=0.7, max_player_speed=None, average_ball_speed=15, sigma=0.45, lamb=4.3,
                          n_grid_points_x=50, n_grid_points_y=30, device='cpu', dtype=torch.float32,
                          first_frame=0, last_frame=500, batch_size=250, deg=50, implementation=None, max_int=500,
-                         team='Home', return_pcpp=False, fix_tti=True)
+                         team='Home', return_pcpp=False, fix_tti=True, reference='x', assumed_reference_x=105,
+                         assumed_reference_y=68)
 
 
 Function calculate the pitch control of the home team in a given range of frames. Function relies on tracking_data class
-object from my tracking data package. Function is based on the code by "anenglishgoat".
+object from my tracking data package. Function is based on the code by "anenglishgoat". <br>
+
+Distance-related parameters (i.e. velocities and distances) are scaled by the pitch dimensions to keep pitch control results consistent independent of dimensions chosen.
+Obviously this mixes up meters (velocity) and pitch units (dimensions). 
+But unless we know the correct size of each matches' pitch and its relation to the units in the position data this is the best estimation; at least for consistency.
+We can scale by either x or y length of the pitch; this introduces additional inaccuracy if x and y change in their relative magnitude.
+
 
 **Parameters**
 
@@ -297,6 +313,9 @@ object from my tracking data package. Function is based on the code by "anenglis
 + *team (str)* - "Team-perspective" for pitch control modeling - Either "Home" or "Away"
 + *return_pcpp (boolean)* - determines whether pitch control for each individual player is returned
 + *fix_tti (boolean)* - determines whether a correction (in my humble opinion) or the original time to intercept as implemented by anenglishgoat is used
++ *reference (str)* - dimension based on which length the parameters are to be scaled (either "x" or "y")
++ *assumed_reference_x* and *assumed_reference_y (float)* - assumed x/y-length of the pitch on which the original parameters are based
+
 
 **Returns**
 
@@ -309,7 +328,7 @@ object from my tracking data package. Function is based on the code by "anenglis
                               average_ball_speed=15, sigma=0.45, lamb=4.3, n_grid_points_x=50, n_grid_points_y=30,
                               device='cpu', dtype=torch.float32, first_frame=0, last_frame=500, batch_size=250, deg=50,
                               implementation=None, max_int=500, cmap=None, velocities=True, flip_y=None, team='Home',
-                              fix_tti=True)
+                              fix_tti=True, reference='x', assumed_reference_x=105, assumed_reference_y=68)
 
 Function to plot players and pitch control a pitch. Uses the *plot_players* from the tracking data class and the 
 *tensor_pitch_control* function. 
@@ -342,6 +361,8 @@ Function to plot players and pitch control a pitch. Uses the *plot_players* from
 + *flip_y (boolean)* - Not recommended. Flips the pitch control on y-axis. Can be a quick fix if pitch control is on its head 
 + *team (str)* - "Team-perspective" for pitch control modeling - Either "Home" or "Away"
 + *fix_tti (boolean)* - determines whether a correction (in my humble opinion) or the original time to intercept as implemented by anenglishgoat is used
++ *reference (str)* - dimension based on which length the parameters are to be scaled (either "x" or "y")
++ *assumed_reference_x* and *assumed_reference_y (float)* - assumed x/y-length of the pitch on which the original parameters are based
 
 
 **Returns**
@@ -373,7 +394,8 @@ Function to convert data frame to array as required in tensor_pitch_control.
                                  flip_y=None, team='Home', progress_steps=[0.25, 0.5, 0.75], frames_per_second=None,
                                  fpath=None, fname='Animation', pitch_col='#1c380e', line_col='white',
                                  colors=['red', 'blue', 'black'], PlayerAlpha=0.7, first_frame_ani=0,
-                                 last_frame_ani=100, fix_tti=True)
+                                 last_frame_ani=100, fix_tti=True, reference='x', assumed_reference_x=105,
+                                 assumed_reference_y=68)
 
 Function to create an animation of player and ball position and pitch control over a given range of frames.
 
@@ -413,6 +435,8 @@ Function to create an animation of player and ball position and pitch control ov
 + *max_int (int)* - maximal interval length for integration method
 + *team (str)* - "Team-perspective" for pitch control modeling - Either "Home" or "Away"
 + *fix_tti (boolean)* - determines whether a correction (in my humble opinion) or the original time to intercept as implemented by anenglishgoat is used
++ *reference (str)* - dimension based on which length the parameters are to be scaled (either "x" or "y")
++ *assumed_reference_x* and *assumed_reference_y (float)* - assumed x/y-length of the pitch on which the original parameters are based
 
 
 ## Credits

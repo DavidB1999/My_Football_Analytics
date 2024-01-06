@@ -11,15 +11,16 @@ around tracking data. <br>
 + *data (dataframe)*: dataframe containing tracking data in wide format (one column for x and y for each player)
 + *data_source (str)* - data origin (influences data handling)
 + *x_range_data* and *y_range_data (tuple, numeric)* - range of x and y coordinates in the *shot_data*
-+ *x_range_pitch* and *x_range_pitch (tuple, numeric)* - range of x and y coordinates required
++ *x_range_pitch* and *x_range_pitch (tuple, numeric)* - range of x and y coordinates required; data will be scaled accordingly
 + *mirror_away (list, str)* - list of axes (x, y) to mirror for the away team 
 + *x_cols_pattern* and *y_cols_pattern (str)* - pattern to look for to identify columns with the coordinates; also used for naming of produced data
 + *scale_to_pitch (str)* - default options of data ranges to scale to
 + *mirror_second_half (boolean)* - indicating whether data from second half is supposed to be mirrored
-+ *home* and *away* - optional names for both teams
-+ *period_col* - column indicating the period of play / half
-+ *time_col* - column with the time
-+ *fps* - frame rate / frames per second of the data
++ *home* and *away (str)* - optional names for both teams
++ *period_col (str)* - column indicating the period of play / half
++ *time_col (str)* - column with the time
++ *fps (int)* - frame rate / frames per second of the data
++ *got_velocities (booean)* - used to store information on whether get_velocities() has already been called
 
 
 ### rescale_tracking_data

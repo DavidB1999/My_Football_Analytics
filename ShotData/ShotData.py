@@ -69,7 +69,7 @@ class shot_data:
             if self.x_range_pitch is None:
                 self.x_range_pitch = (0, 105)
             if self.y_range_pitch is None:
-                self.y_range_pitch = (0, 65)
+                self.y_range_pitch = (0, 68)
         elif (self.x_range_pitch is None) or (self.y_range_pitch is None):
             raise ValueError(f'You have not selected a pitch type to which the data is supposed to be scaled.'
                              f'Neither did you supply custom ranges via "x_range_pitch" and "y_range_pitch"'
@@ -519,7 +519,7 @@ class shot_data:
         # update layout
         # width and height as multiple of pitch dimensions to maintain aspect ratio
         # margins of paper around actual plot (keep space for header if intended
-        fig.update_layout(autosize=True, width=105 * size_multiplicator, height=65 * size_multiplicator,
+        fig.update_layout(autosize=True, width=105 * size_multiplicator, height=68 * size_multiplicator,
                           margin=margins,
                           xaxis=dict(visible=axis_visible, autorange=True),
                           yaxis=dict(visible=axis_visible, autorange=aa),

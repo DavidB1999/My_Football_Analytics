@@ -914,7 +914,7 @@ def plot_tensor_pitch_control(td_object, frame, pitch_control=None, version='Spe
                               average_ball_speed=15, sigma=0.45, lamb=4.3, n_grid_points_x=50, n_grid_points_y=30,
                               device='cpu', dtype=torch.float32, first_frame=0, last_frame=500, batch_size=250, deg=50,
                               implementation=None, max_int=500, cmap=None, velocities=True, flip_y=None, team='Home',
-                              fix_tti=True):
+                              fix_tti=True, reference='x', assumed_reference_x=105, assumed_reference_y=68):
     if td_object.got_velocities:
         pass
     else:
@@ -945,7 +945,10 @@ def plot_tensor_pitch_control(td_object, frame, pitch_control=None, version='Spe
                                              n_grid_points_x=n_grid_points_x, n_grid_points_y=n_grid_points_y,
                                              device=device, dtype=dtype, first_frame=first_frame, last_frame=last_frame,
                                              batch_size=batch_size, deg=deg, implementation=implementation,
-                                             max_int=max_int, return_pcpp=False, fix_tti=fix_tti)
+                                             max_int=max_int, return_pcpp=False, fix_tti=fix_tti,
+                                             reference=reference, assumed_reference_y=assumed_reference_y,
+                                             assumed_reference_x=assumed_reference_x)
+
     # if Fernandez we need to adapt dimensions of pc tensor
     if version == 'Fernandez':
         pitch_control = pitch_control.reshape(pitch_control.shape[0], n_grid_points_y, n_grid_points_x)
@@ -1018,7 +1021,8 @@ def animate_tensor_pitch_control(td_object, version='Spearman', pitch_control=No
                                  flip_y=None, team='Home', progress_steps=[0.25, 0.5, 0.75], frames_per_second=None,
                                  fpath=None, fname='Animation', pitch_col='#1c380e', line_col='white',
                                  colors=['red', 'blue', 'black'], PlayerAlpha=0.7, first_frame_ani=0,
-                                 last_frame_ani=100, fix_tti=True):
+                                 last_frame_ani=100, fix_tti=True, reference='x', assumed_reference_x=105,
+                                 assumed_reference_y=68):
     if td_object.got_velocities:
         pass
     else:
@@ -1072,7 +1076,9 @@ def animate_tensor_pitch_control(td_object, version='Spearman', pitch_control=No
                                              device=device,
                                              dtype=dtype, first_frame=first_frame_calc, last_frame=last_frame_calc,
                                              batch_size=batch_size, deg=deg, implementation=implementation,
-                                             max_int=max_int, return_pcpp=False, fix_tti=fix_tti)
+                                             max_int=max_int, return_pcpp=False, fix_tti=fix_tti,
+                                             reference=reference, assumed_reference_y=assumed_reference_y,
+                                             assumed_reference_x=assumed_reference_x)
     if version == 'Fernandez':
         pitch_control = pitch_control.reshape(pitch_control.shape[0], n_grid_points_y, n_grid_points_x)
 
