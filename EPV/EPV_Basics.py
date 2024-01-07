@@ -98,7 +98,7 @@ class EPV_Grid:
         if cmap:
             pass
         else:
-            cmap=self.cmap
+            cmap = self.cmap
         # rotate grid to account for playing direction of analyzed team
         if self.playing_direction == 'rtl':
             grid = np.flip(self.grid)
@@ -126,7 +126,16 @@ class EPV_Grid:
     def get_AV_grid(self, frame, pc_version='Spearman', pc_implementation='GL', pc_reaction_time=0.7,
                     pc_max_player_speed=None, pc_average_ball_speed=15, pc_sigma=0.45, pc_lambda=4.3, pc_device='cpu',
                     pc_first_frame_calc=0, pc_last_frame_calc=250, pc_batch_size=250, pc_reference='x',
-                    pc_assumed_reference_x=105, pc_assumed_reference_y=68):
+                    pc_assumed_reference_x=105, pc_assumed_reference_y=68, risk=True):
+
+        assert self.playing_direction in ('ltr', 'rtl'), 'attacking_direction needs to be either "ltr" or "rtl"'
+        # rotate grid to account for playing direction of analyzed team
+        if self.playing_direction == 'rtl':
+            grid = np.flip(self.grid)
+        else:
+            grid = self.grid
+
+        frame_number = frame - pc_first_frame_calc
 
         pitch_control_grid = pc.tensor_pitch_control(td_object=self.td_object, version=pc_version,
                                                      implementation=pc_implementation, jitter=1e-12,
@@ -134,8 +143,8 @@ class EPV_Grid:
                                                      reaction_time=pc_reaction_time,
                                                      max_player_speed=pc_max_player_speed,
                                                      average_ball_speed=pc_average_ball_speed, sigma=pc_sigma,
-                                                     lamb=pc_lambda, n_grid_points_x=self.grid_dimensions[0],
-                                                     n_grid_points_y=self.grid_dimensions[1], device=pc_device,
+                                                     lamb=pc_lambda, n_grid_points_x=self.grid_dimensions[1],
+                                                     n_grid_points_y=self.grid_dimensions[0], device=pc_device,
                                                      dtype=torch.float32, first_frame=pc_first_frame_calc,
                                                      last_frame=pc_last_frame_calc, batch_size=pc_batch_size,
                                                      deg=50, max_int=500, team=self.team, return_pcpp=False,
@@ -147,21 +156,44 @@ class EPV_Grid:
         if pc_version == 'Fernandez':
             pitch_control_grid = pitch_control_grid.reshape(pitch_control_grid.shape[0], self.grid_dimensions[0],
                                                             self.grid_dimensions[1])
-        pitch_control_grid = pitch_control_grid[frame - pc_first_frame_calc]
-        AV_grid = pitch_control_grid * self.grid
+            pitch_control_grid = pitch_control_grid[frame_number]
+        elif pc_version == 'Spearman':
+            pitch_control_grid = pitch_control_grid[frame_number]
+            pitch_control_grid = np.flipud(np.rot90(pitch_control_grid))
+        else:
+            raise ValueError(f'{pc_version} is not a valid version. Chose either "Fernandez" or "Spearman"')
+
+        if risk:
+            AV_grid = pitch_control_grid * grid - (1 - pitch_control_grid) * np.flip(grid)
+        else:
+            AV_grid = pitch_control_grid * grid
 
         return AV_grid
 
     def plot_AV_grid(self, frame, AV_grid=None, pc_version='Spearman', pc_implementation='GL', pc_reaction_time=0.7,
                      pc_max_player_speed=None, pc_average_ball_speed=15, pc_sigma=0.45, pc_lambda=4.3, pc_device='cpu',
                      pc_first_frame_calc=0, pc_last_frame_calc=250, pc_batch_size=250, pc_reference='x',
-                     pc_assumed_reference_x=105, pc_assumed_reference_y=68, cmap=None):
+                     pc_assumed_reference_x=105, pc_assumed_reference_y=68, cmap=None, risk=True):
+
+        assert self.playing_direction in ('ltr', 'rtl'), 'attacking_direction needs to be either "ltr" or "rtl"'
+        # rotate grid to account for playing direction of analyzed team
+        if self.playing_direction == 'rtl':
+            grid = np.flip(self.grid)
+        else:
+            grid = self.grid
 
         frame_number = frame - pc_first_frame_calc
         if cmap:
             pass
         else:
-            cmap = self.cmap
+            if risk:
+                if self.team == 'Home':
+                    cmap = self.cmaps[3]
+                elif self.team == 'Away':
+                    cmap = self.cmaps[2]
+                    print(cmap)
+            else:
+                cmap = self.cmap
 
         # plot players
         if AV_grid:
@@ -173,8 +205,8 @@ class EPV_Grid:
                                                          reaction_time=pc_reaction_time,
                                                          max_player_speed=pc_max_player_speed,
                                                          average_ball_speed=pc_average_ball_speed, sigma=pc_sigma,
-                                                         lamb=pc_lambda, n_grid_points_x=self.grid_dimensions[0],
-                                                         n_grid_points_y=self.grid_dimensions[1], device=pc_device,
+                                                         lamb=pc_lambda, n_grid_points_x=self.grid_dimensions[1],
+                                                         n_grid_points_y=self.grid_dimensions[0], device=pc_device,
                                                          dtype=torch.float32, first_frame=pc_first_frame_calc,
                                                          last_frame=pc_last_frame_calc, batch_size=pc_batch_size,
                                                          deg=50, max_int=500, team=self.team, return_pcpp=False,
@@ -185,24 +217,29 @@ class EPV_Grid:
         if pc_version == 'Fernandez':
             pitch_control_grid = pitch_control_grid.reshape(pitch_control_grid.shape[0], self.grid_dimensions[0],
                                                             self.grid_dimensions[1])
-        pitch_control_grid = pitch_control_grid[frame_number]
-        print(pitch_control_grid.shape)
-        print(self.grid.shape)
-        AV_grid = pitch_control_grid * self.grid
-
-        fig, ax = self.td_object.plot_players(frame=frame_number, velocities=True, pitch_col='white',
-                                              line_col='#444444')
-
-        if pc_version == 'Spearman':
-            ax.imshow(self.grid, extent=(
-                self.td_object.x_range_pitch[0], self.td_object.x_range_pitch[1], self.td_object.y_range_pitch[0],
-                self.td_object.y_range_pitch[1]), cmap=cmap, alpha=0.6, vmin=0.0, vmax=0.6, origin='lower')
-        elif pc_version == 'Fernandez':
-            ax.imshow(AV_grid, extent=(
-                self.td_object.x_range_pitch[0], self.td_object.x_range_pitch[1], self.td_object.y_range_pitch[0],
-                self.td_object.y_range_pitch[1]), cmap=cmap, alpha=0.6, vmin=0.0, vmax=0.6, origin='lower')
+            pitch_control_grid = pitch_control_grid[frame_number].numpy()
+        elif pc_version == 'Spearman':
+            pitch_control_grid = pitch_control_grid[frame_number]
+            pitch_control_grid = np.flipud(np.rot90(pitch_control_grid))
         else:
             raise ValueError(f'{pc_version} is not a valid version. Chose either "Fernandez" or "Spearman"')
+
+        print(type(pitch_control_grid), type(grid))
+        if risk:
+            AV_grid = pitch_control_grid * grid - (1 - pitch_control_grid) * np.flip(grid)
+            vmi = -0.075
+            vma = 0.075
+        else:
+            AV_grid = pitch_control_grid * grid
+            vmi = 0
+            vma = 0.075
+
+        fig, ax = self.td_object.plot_players(frame=frame, velocities=True, pitch_col='white',
+                                              line_col='#444444')
+
+        ax.imshow(AV_grid, extent=(
+            self.td_object.x_range_pitch[0], self.td_object.x_range_pitch[1], self.td_object.y_range_pitch[0],
+            self.td_object.y_range_pitch[1]), cmap=cmap, alpha=0.8, vmin=vmi, vmax=vma, origin='lower')
 
         return fig, ax
 
