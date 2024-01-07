@@ -301,7 +301,7 @@ def pitch_control_at_frame(frame, td_object, n_grid_cells_x=50, offside=False, a
         for j in range(len(xgrid)):
             target_position = np.array([xgrid[j], ygrid[i]])
             PPCFa[i, j], PPCFd[i, j] = pitch_control_at_target(target_position, attacking_players, defending_players,
-                                                               ball_start_pos, params)
+                                                               ball_start_pos, params, td_object=td_object)
     # check probability sums within convergence
     checksum = np.sum(PPCFa + PPCFd) / float(n_grid_cells_y * n_grid_cells_x)
     assert 1 - checksum < params['model_converge_tol'], "Checksum failed: %1.3f" % (1 - checksum)
@@ -745,15 +745,11 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
                         -exp * (dt * tt + ball_travel_time - tti[:, :ball_travel_time.shape[1]])))
 
                 if team == 'Home':
-                    pc[(first_frame + b * batch_size):
-                       (np.minimum(first_frame + (b + 1) * batch_size, int(first_frame + n_frames)))] = y[
-                                                                                                        :h_players].sum(
-                        0)
+                    pc[(b * batch_size):
+                       (np.minimum((b + 1) * batch_size, int(n_frames)))] = y[:h_players].sum(0)
                 elif team == 'Away':
-                    pc[(first_frame + b * batch_size):
-                       (np.minimum(first_frame + (b + 1) * batch_size, int(first_frame + n_frames)))] = y[
-                                                                                                        h_players:].sum(
-                        0)
+                    pc[(b * batch_size):
+                       (np.minimum((b + 1) * batch_size, int(n_frames)))] = y[h_players:].sum(0)
                 else:
                     raise ValueError(f'team needs to be either "Home" or "Away". {team} is not valid')
         else:
@@ -883,9 +879,17 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
             if implementation == 'org':
                 # based on both teams influence areas we calculate the pitch control by transforming the delta into
                 # a probability via the sigmoid function
-                pitch_control[(b * batch_size):
-                              (np.minimum((b + 1) * batch_size, int(n_frames))), :] = torch.sigmoid(
-                    torch.sum(infl_h, 0) - torch.sum(infl_a, 0))
+                if team == 'Home':
+                    pitch_control[(b * batch_size):
+                                  (np.minimum((b + 1) * batch_size, int(n_frames))), :] = torch.sigmoid(
+                        torch.sum(infl_h, 0) - torch.sum(infl_a, 0))
+                elif team == 'Away':
+                    pitch_control[(b * batch_size):
+                                  (np.minimum((b + 1) * batch_size, int(n_frames))), :] = torch.sigmoid(
+                        torch.sum(infl_a, 0) - torch.sum(infl_h, 0))
+                else:
+                    raise ValueError(f'team needs to be either "Home" or "Away". {team} is not valid')
+
             elif implementation == 'adap':
                 # rather than putting influence functions through a sigmoid function, just set individual player's
                 # control over a location to be their proportion of the total influence at that location.
@@ -893,8 +897,12 @@ def tensor_pitch_control(td_object, version, jitter=1e-12, pos_nan_to=-1000, vel
                 if return_pcpp:
                     pcpp = torch.Tensor(n_players, n_frames, xy_query.shape[0])
                     pcpp[:, (b * batch_size):(np.minimum((b + 1) * batch_size, int(n_frames))), :] = pc
-                pitch_control[(b * batch_size):(np.minimum((b + 1) * batch_size, int(n_frames))), :] = torch.sum(
-                    pc[0:h_players], 0)
+                if team == 'Home':
+                    pitch_control[(b * batch_size):(np.minimum((b + 1) * batch_size, int(n_frames))), :] = torch.sum(
+                        pc[0:h_players], 0)
+                elif team == 'Away':
+                    pitch_control[(b * batch_size):(np.minimum((b + 1) * batch_size, int(n_frames))), :] = torch.sum(
+                        pc[h_players:], 0)
             else:
                 raise ValueError(f'{implementation} is not a valid implementation. Chose either "org" or "adap" for '
                                  f'the Fernandez-version and either "int" or "GL" for the Spearman-version.')
@@ -947,7 +955,7 @@ def plot_tensor_pitch_control(td_object, frame, pitch_control=None, version='Spe
                                              batch_size=batch_size, deg=deg, implementation=implementation,
                                              max_int=max_int, return_pcpp=False, fix_tti=fix_tti,
                                              reference=reference, assumed_reference_y=assumed_reference_y,
-                                             assumed_reference_x=assumed_reference_x)
+                                             assumed_reference_x=assumed_reference_x, team=team)
 
     # if Fernandez we need to adapt dimensions of pc tensor
     if version == 'Fernandez':
@@ -964,7 +972,7 @@ def plot_tensor_pitch_control(td_object, frame, pitch_control=None, version='Spe
 
     frame_number = frame - first_frame
     # plot players
-    fig, ax = td_object.plot_players(frame=frame_number, velocities=velocities)
+    fig, ax = td_object.plot_players(frame=frame, velocities=velocities)
 
     # ensure correct orientation
     mx_pitch = max(td_object.y_range_pitch)
@@ -1073,7 +1081,7 @@ def animate_tensor_pitch_control(td_object, version='Spearman', pitch_control=No
                                              reaction_time=reaction_time, max_player_speed=max_player_speed,
                                              average_ball_speed=average_ball_speed, sigma=sigma, lamb=lamb,
                                              n_grid_points_x=n_grid_points_x, n_grid_points_y=n_grid_points_y,
-                                             device=device,
+                                             device=device, team=team,
                                              dtype=dtype, first_frame=first_frame_calc, last_frame=last_frame_calc,
                                              batch_size=batch_size, deg=deg, implementation=implementation,
                                              max_int=max_int, return_pcpp=False, fix_tti=fix_tti,

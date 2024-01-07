@@ -19,7 +19,7 @@ class tracking_data:
                  x_range_pitch=None, y_range_pitch=None, mirror_away=None,
                  x_cols_pattern=None, y_cols_pattern=None, scale_to_pitch='mplsoccer',
                  mirror_second_half=None, home=None, away=None, period_col=None,
-                 time_col=None, fps=None):
+                 time_col=None, fps=None, colors=['red', 'blue', 'black']):
 
         self.supported_data_sources = ['metrica', 'dfl']
 
@@ -30,6 +30,10 @@ class tracking_data:
         self.home = home
         self.away = away
         self.got_velocities = False
+        self.colors = colors
+        self.h_col = colors[0]
+        self.a_col = colors[1]
+        self.b_col = colors[2]
 
         # selfs preparing for conditional assignment
         self.x_range_data = x_range_data
@@ -223,7 +227,7 @@ class tracking_data:
     # function to plot players for a given frame
     # ------------------------------------------
 
-    def plot_players(self, frame, pitch_col='#1c380e', line_col='white', colors=['red', 'blue', 'black'],
+    def plot_players(self, frame, pitch_col='#1c380e', line_col='white', colors=None,
                      velocities=False, PlayerAlpha=0.7):
 
         # ensure velocities exist if to be plotted
@@ -231,6 +235,11 @@ class tracking_data:
             pass
         else:
             self.get_velocities()
+
+        if colors:
+            pass
+        else:
+            colors = self.colors
 
         if self.scale_to_pitch == 'mplsoccer':
             pitch = Pitch(pitch_color=pitch_col, line_color=line_col)
@@ -340,12 +349,17 @@ class tracking_data:
 
     # credit and details: https://github.com/Friends-of-Tracking-Data-FoTD/LaurieOnTracking/blob/master/Metrica_Viz.py
     def animation_clip(self, frames_per_second=25, fname='Animated_Clip', pitch_col='#1c380e',
-                       line_col='white', data=None, frames=None, colors=['red', 'blue', 'black'],
+                       line_col='white', data=None, frames=None, colors=None,
                        velocities=False, PlayerAlpha=0.7, fpath=None):
 
         # if no other data frame is supplied we use the class data
         if data is None:
             data = self.data
+
+        if colors:
+            pass
+        else:
+            colors = self.colors
 
         field_dimen = (max(self.dimensions['x']['pitch']), max(self.dimensions['y']['pitch']))
 

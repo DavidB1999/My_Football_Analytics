@@ -27,7 +27,7 @@ def get_EPV_grid(fname, fpath='grids', as_class=True, origin=None, td_object=Non
 
 class EPV_Grid:
     def __init__(self, grid, grid_dimensions=None, origin=None, td_object=None, x_range=None, y_range=None,
-                 scale_to_pitch=None, team='Home'):
+                 scale_to_pitch=None, team='Home', cmaps=['Reds', 'Blues', 'bwr_r', 'bwr']):
 
         self.grid = grid
         if grid_dimensions:
@@ -52,12 +52,15 @@ class EPV_Grid:
         if self.td_object:
             if self.team == 'Home':
                 self.playing_direction = self.td_object.playing_direction_home
+                self.cmap = cmaps[0]
             elif self.team == 'Away':
                 self.playing_direction = self.td_object.playing_direction_away
+                self.cmap = cmaps[1]
             else:
                 raise ValueError('teams should be either "Home" or "Away" as defined in td_object!')
 
         self.AV_grid = None
+        self.cmaps = cmaps
 
     def __str__(self):
         if self.origin:
@@ -90,8 +93,12 @@ class EPV_Grid:
             cy = abs(self.y_range_grid[0] - y) / abs(self.y_range_grid[0] - self.y_range_grid[1]) * ny - 0.0001
             return (cy, cx), grid[int(cy), int(cx)]
 
-    def plot_grid(self, pitch_col='white', line_col='#444444'):
+    def plot_grid(self, pitch_col='white', line_col='#444444', cmap=None):
 
+        if cmap:
+            pass
+        else:
+            cmap=self.cmap
         # rotate grid to account for playing direction of analyzed team
         if self.playing_direction == 'rtl':
             grid = np.flip(self.grid)
@@ -112,7 +119,7 @@ class EPV_Grid:
 
         ax.imshow(grid, extent=(self.x_range_grid[0], self.x_range_grid[1], self.y_range_grid[0],
                                 self.y_range_grid[1]),
-                  vmin=0.0, vmax=0.6, cmap='Greens', alpha=0.6)
+                  vmin=0.0, vmax=0.6, cmap=cmap, alpha=0.6)
 
         return fig, ax
 
@@ -148,9 +155,13 @@ class EPV_Grid:
     def plot_AV_grid(self, frame, AV_grid=None, pc_version='Spearman', pc_implementation='GL', pc_reaction_time=0.7,
                      pc_max_player_speed=None, pc_average_ball_speed=15, pc_sigma=0.45, pc_lambda=4.3, pc_device='cpu',
                      pc_first_frame_calc=0, pc_last_frame_calc=250, pc_batch_size=250, pc_reference='x',
-                     pc_assumed_reference_x=105, pc_assumed_reference_y=68, cmap='Blues'):
+                     pc_assumed_reference_x=105, pc_assumed_reference_y=68, cmap=None):
 
         frame_number = frame - pc_first_frame_calc
+        if cmap:
+            pass
+        else:
+            cmap = self.cmap
 
         # plot players
         if AV_grid:
@@ -175,20 +186,23 @@ class EPV_Grid:
             pitch_control_grid = pitch_control_grid.reshape(pitch_control_grid.shape[0], self.grid_dimensions[0],
                                                             self.grid_dimensions[1])
         pitch_control_grid = pitch_control_grid[frame_number]
+        print(pitch_control_grid.shape)
+        print(self.grid.shape)
         AV_grid = pitch_control_grid * self.grid
 
-        fig, ax = self.td_object.plot_players(frame=frame_number, velocities=True)
+        fig, ax = self.td_object.plot_players(frame=frame_number, velocities=True, pitch_col='white',
+                                              line_col='#444444')
 
         if pc_version == 'Spearman':
-            ax.imshow(np.flipud(AV_grid.rot90()), extent=(
+            ax.imshow(self.grid, extent=(
                 self.td_object.x_range_pitch[0], self.td_object.x_range_pitch[1], self.td_object.y_range_pitch[0],
-                self.td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0, origin='lower')
+                self.td_object.y_range_pitch[1]), cmap=cmap, alpha=0.6, vmin=0.0, vmax=0.6, origin='lower')
         elif pc_version == 'Fernandez':
             ax.imshow(AV_grid, extent=(
                 self.td_object.x_range_pitch[0], self.td_object.x_range_pitch[1], self.td_object.y_range_pitch[0],
-                self.td_object.y_range_pitch[1]), cmap=cmap, alpha=0.5, vmin=0.0, vmax=1.0, origin='lower')
+                self.td_object.y_range_pitch[1]), cmap=cmap, alpha=0.6, vmin=0.0, vmax=0.6, origin='lower')
         else:
-            raise ValueError(f'{version} is not a valid version. Chose either "Fernandez" or "Spearman"')
+            raise ValueError(f'{pc_version} is not a valid version. Chose either "Fernandez" or "Spearman"')
 
         return fig, ax
 
