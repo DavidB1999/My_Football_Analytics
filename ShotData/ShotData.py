@@ -431,7 +431,7 @@ class shot_data:
     # ----------------------------------
     # an interactive shotmap with plotly
     # ----------------------------------
-    def interactive_shotmap(self, color1='red', color2='blue', pitch_type='mplsoccer', background_col='#16745b',
+    def interactive_shotmap(self, color1='red', color2='blue', pitch_type='mplsoccer', background_col='white',
                             pitch_x0=None, pitch_y0=None, size_multiplicator=5, title=None, title_col='white',
                             xg_text=True, xg_text_x=None, xg_text_y=None, margins=None,
                             result_text=True, result_text_x=None, result_text_y=None,
@@ -455,10 +455,11 @@ class shot_data:
                          symbol=self.result_col, size=self.xg_col,
                          color_discrete_sequence=[color1, color2],
                          custom_data=[self.player_col, self.xg_col, self.result_col],
-                         hover_data=[self.xg_col, self.result_col], symbol_sequence=symbols)
+                         hover_data={self.xg_col: ':.2f', self.result_col: True}, symbol_sequence=symbols)
+        #
 
         # adapt hover to show player name, xG and result of shot
-        fig.update_traces(hovertemplate="%{customdata[0]}<br>%{customdata[1]}<br>%{customdata[2]}", hoverinfo=None)
+        fig.update_traces(hovertemplate="%{customdata[0]}<br>%{customdata[1]:.2f}<br>%{customdata[2]}", hoverinfo=None)
 
         # create pitch and save a png of pitch
         # also define necessary parameters (origin and size of pitch) if not supplied explicitly

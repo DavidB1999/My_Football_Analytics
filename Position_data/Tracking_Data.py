@@ -21,6 +21,7 @@ class tracking_data:
                  mirror_second_half=None, home=None, away=None, period_col=None,
                  time_col=None, fps=None, colors=['red', 'blue', 'black']):
 
+        self.dimensions = None
         self.supported_data_sources = ['metrica', 'dfl']
 
         # selfs independent of data source and pitch type
@@ -157,7 +158,7 @@ class tracking_data:
         self.dimensions[self.y_cols_pattern]['ball_columns'] = [c for c in data.columns if
                                                                 c[-1].lower() == self.y_cols_pattern and c.startswith(
                                                                     'ball')]
-        for dim in self.dimensions.keys():
+        for dim in self.dimensions:
             datamin = self.dimensions[dim]['data'][0]
             datamax = self.dimensions[dim]['data'][1]
             delta_data = datamax - datamin
@@ -170,7 +171,7 @@ class tracking_data:
         # print(self.dimensions)
 
         # for both x and y (or whatever they are called)
-        for dim in self.dimensions.keys():
+        for dim in self.dimensions:
             # home
             data[self.dimensions[dim]['home_columns']] = self.dimensions[dim]['pitch'][0] + (data[
                                                                                                  self.dimensions[dim][
@@ -204,18 +205,24 @@ class tracking_data:
                                                                                                      'data'][0] * -1) * \
                                                              self.dimensions[dim]['scaling_factor']
 
+        # using 1 as scaling factor and pitch dimensions for a & b as scaling has already happened
         if self.mirror_second_half:
             half_filter = data[self.period_column] == 2
             # home
             data.loc[half_filter, self.dimensions[dim]['home_columns']] = self.dimensions[dim]['pitch'][1] - \
                                                                           (data[self.dimensions[dim]['home_columns']][
                                                                                half_filter] +
-                                                                           self.dimensions[dim]['data'][0] * -1) * 1
+                                                                           self.dimensions[dim]['pitch'][0] * -1) * 1
             # away
             data.loc[half_filter, self.dimensions[dim]['away_columns']] = self.dimensions[dim]['pitch'][1] - \
                                                                           (data[self.dimensions[dim]['away_columns']][
                                                                                half_filter] +
-                                                                           self.dimensions[dim]['data'][0] * -1) * 1
+                                                                           self.dimensions[dim]['pitch'][0] * -1) * 1
+            # ball
+            data.loc[half_filter, self.dimensions[dim]['ball_columns']] = self.dimensions[dim]['pitch'][1] - \
+                                                                          (data[self.dimensions[dim]['ball_columns']][
+                                                                               half_filter] +
+                                                                           self.dimensions[dim]['pitch'][0] * -1) * 1
         self.playing_direction_home = self.find_direction('Home', data)
         self.playing_direction_away = self.find_direction('Away', data)
         self.Home_GK = self.find_goalkeeper('Home', data)
@@ -247,7 +254,8 @@ class tracking_data:
             fig.set_facecolor(pitch_col)
             pitch.draw(ax=ax)
         elif self.scale_to_pitch == 'myPitch':
-            pitch = myPitch(grasscol=pitch_col, linecol=line_col, x_range_pitch=self.x_range_pitch, y_range_pitch=self.y_range_pitch)
+            pitch = myPitch(grasscol=pitch_col, linecol=line_col, x_range_pitch=self.x_range_pitch,
+                            y_range_pitch=self.y_range_pitch)
             fig, ax = plt.subplots()  # figsize=(13.5, 8)
             fig.set_facecolor(pitch_col)
             pitch.plot_pitch(ax=ax)
