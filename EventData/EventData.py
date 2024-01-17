@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 
 def load_metrica_event_data(datadir, fname):
     file = datadir + '/' + fname
-    print(file)
     events = pd.read_csv(file)  # read data
     return events
 
@@ -25,7 +24,7 @@ class event_data:
                  mirror_away=None, home_team=None, away_team=None):
 
         self.dimensions = None
-        self.supported_data_sources = ['metrica']
+        self.supported_data_sources = ['metrica', 'Statsbomb']
         self.supported_pitches = ['mplsoccer', 'myPitch']
 
         self.org_data = data
