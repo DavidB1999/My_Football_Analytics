@@ -1,8 +1,8 @@
 Football_Analytics_venv/
 .ipynb_checkpoints/
-EPV/grids
+EPV/grids/
 # Position_data/PitchControl/Literature/
-Position_data/PitchControl/sample-data-master
+Position_data/PitchControl/sample-data-master/
 
 ffmpeg.exe
 
