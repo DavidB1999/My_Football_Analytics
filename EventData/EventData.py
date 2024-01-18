@@ -33,7 +33,7 @@ class event_data:
         self.y_range_data = y_range_data
         self.x_range_pitch = x_range_pitch
         self.y_range_pitch = y_range_pitch
-        self.pitch = scale_to_pitch
+        self.scale_to_pitch = scale_to_pitch
         self.mirror_second_half = mirror_second_half
         self.mirror_away = mirror_away
         self.fps = fps
@@ -126,13 +126,13 @@ class event_data:
             raise ValueError(f'You entered {self.data_source}. '
                              f'Unfortunately only {self.supported_data_sources} is/are supported at this stage.')
 
-        if self.pitch == 'mplsoccer':
+        if self.scale_to_pitch == 'mplsoccer':
             if self.x_range_pitch or self.y_range_pitch:
                 logging.warning("mplsoccer pitch does not allow for a rescaling of the pitch. Axis ranges remain as"
                                 "(0, 120) for x and (80, 0) for y!")
             self.x_range_pitch = (0, 120)
             self.y_range_pitch = (80, 0)
-        elif self.pitch == 'myPitch':
+        elif self.scale_to_pitch == 'myPitch':
             if self.x_range_pitch is None:
                 self.x_range_pitch = (0, 105)
             if self.y_range_pitch is None:
@@ -194,7 +194,7 @@ class event_data:
                 data['pass_end_location'][
                     index] if data[self.type_col][index] == 'Pass' else
                 data['carry_end_location'][index][0] if isinstance(data['carry_end_location'][index], list) and
-                                                       data[self.type_col][index] == 'Carry' else
+                                                        data[self.type_col][index] == 'Carry' else
                 data['carry_end_location'][
                     index] if data[self.type_col][index] == 'Carry' else
                 data['shot_end_location'][index][0] if isinstance(data['shot_end_location'][index], list) and
@@ -207,7 +207,7 @@ class event_data:
                 data['pass_end_location'][
                     index] if data[self.type_col][index] == 'Pass' else
                 data['carry_end_location'][index][1] if isinstance(data['carry_end_location'][index], list) and
-                                                       data[self.type_col][index] == 'Carry' else
+                                                        data[self.type_col][index] == 'Carry' else
                 data['carry_end_location'][
                     index] if data[self.type_col][index] == 'Carry' else
                 data['shot_end_location'][index][1] if isinstance(data['shot_end_location'][index], list) and
@@ -231,7 +231,8 @@ class event_data:
                                                                                index] == 'Substitution' else np.nan
                                     for index, row in data.iterrows()]
         if self.data_source == 'Statsbomb':
-            new_data = pd.DataFrame(data_dict).sort_values(['Period', 'Timestamp'], ascending=[True, True]).reset_index()
+            new_data = pd.DataFrame(data_dict).sort_values(['Period', 'Timestamp'],
+                                                           ascending=[True, True]).reset_index()
             new_data.rename(columns={'index': 'org_index'}, inplace=True)
         else:
             new_data = pd.DataFrame(data_dict)
@@ -255,7 +256,6 @@ class event_data:
         if 'End_y' in new_data.columns:
             new_data['End_y'] = self.dimensions['y']['pitch'][0] + (
                     new_data['End_y'] + self.dimensions['y']['data'][0] * (-1)) * self.dimensions['y']['scaling_factor']
-
 
         # mirroring?!
         if 'x' in self.mirror_away:
@@ -294,4 +294,37 @@ class event_data:
         ev_da = ev_da.loc[ev_da['Type'] == event_type]
         return ev_da
 
-    # plot events function next
+    etl = {'SHOT': 'solid', 'PASS': 'dotted'}
+    etm = {'SHOT': '.', 'PASS': '.', 'SET PIECE': 's', 'BALL LOST': 'x', 'CHALLENGE': '1',
+           'RECOVERY': '2',
+           'BALL OUT': '.', 'FAULT RECEIVED': '^', 'CARD': 'v'}
+
+    def plot_events(self, event_index, td_object, actions_back=0, frames_back=0, event_type_marker=etm,
+                    event_type_linestyle=etl, alpha=0.8, color='team'):
+        print('In development')
+
+        assert self.scale_to_pitch == td_object.scale_to_pitch, 'Pitch needs to be the same for event and tracking data'
+        assert 'Start_Frame' in self.data.columns, 'Event data has to be coupled with tracking data and contain frame ' \
+                                                   'number; only available in metrica'
+        frame = self.data['Start_Frame'][event_index] - frames_back
+
+        fig, ax = td_object.plot_players(frame=frame, velocities=True, pitch_col='white',
+                                         line_col='#444444')
+
+        for i, row in self.data.iloc[event_index - actions_back:event_index + 1].iterrows():
+            if color == 'team':
+                color = self.colors[0] if row['Team'] == self.home_team else self.colors[1]
+            elif color == 'ball':
+                color = self.colors[2]
+
+            if row['Type'] in event_type_marker:
+                ax.plot(row['Start_x'], row['Start_y'], color=color, alpha=alpha,
+                        marker=event_type_marker[row['Type']])
+            if row['Type'] in event_type_linestyle:
+                dx = row['End_x'] - row['Start_x']
+                dy = row['End_y'] - row['Start_y']
+                ax.arrow(x=row['Start_x'], y=row['Start_y'], dx=dx, dy=dy, color=color,
+                         ls=event_type_linestyle[row['Type']],
+                         width=max(self.dimensions['x']['pitch']) * 0.0001,
+                         head_width=max(self.dimensions['x']['pitch']) * 0.01,
+                         length_includes_head=True)
