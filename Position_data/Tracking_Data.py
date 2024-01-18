@@ -205,24 +205,24 @@ class tracking_data:
                                                                                                      'data'][0] * -1) * \
                                                              self.dimensions[dim]['scaling_factor']
 
-        # using 1 as scaling factor and pitch dimensions for a & b as scaling has already happened
-        if self.mirror_second_half:
-            half_filter = data[self.period_column] == 2
-            # home
-            data.loc[half_filter, self.dimensions[dim]['home_columns']] = self.dimensions[dim]['pitch'][1] - \
-                                                                          (data[self.dimensions[dim]['home_columns']][
-                                                                               half_filter] +
-                                                                           self.dimensions[dim]['pitch'][0] * -1) * 1
-            # away
-            data.loc[half_filter, self.dimensions[dim]['away_columns']] = self.dimensions[dim]['pitch'][1] - \
-                                                                          (data[self.dimensions[dim]['away_columns']][
-                                                                               half_filter] +
-                                                                           self.dimensions[dim]['pitch'][0] * -1) * 1
-            # ball
-            data.loc[half_filter, self.dimensions[dim]['ball_columns']] = self.dimensions[dim]['pitch'][1] - \
-                                                                          (data[self.dimensions[dim]['ball_columns']][
-                                                                               half_filter] +
-                                                                           self.dimensions[dim]['pitch'][0] * -1) * 1
+            # using 1 as scaling factor and pitch dimensions for a & b as scaling has already happened
+            if self.mirror_second_half:
+                half_filter = data[self.period_column] == 2
+                # home
+                data.loc[half_filter, self.dimensions[dim]['home_columns']] = self.dimensions[dim]['pitch'][1] - \
+                                                                              (data[self.dimensions[dim]['home_columns']][
+                                                                                   half_filter] +
+                                                                               self.dimensions[dim]['pitch'][0] * -1) * 1
+                # away
+                data.loc[half_filter, self.dimensions[dim]['away_columns']] = self.dimensions[dim]['pitch'][1] - \
+                                                                              (data[self.dimensions[dim]['away_columns']][
+                                                                                   half_filter] +
+                                                                               self.dimensions[dim]['pitch'][0] * -1) * 1
+                # ball
+                data.loc[half_filter, self.dimensions[dim]['ball_columns']] = self.dimensions[dim]['pitch'][1] - \
+                                                                              (data[self.dimensions[dim]['ball_columns']][
+                                                                                   half_filter] +
+                                                                               self.dimensions[dim]['pitch'][0] * -1) * 1
         self.playing_direction_home = self.find_direction('Home', data)
         self.playing_direction_away = self.find_direction('Away', data)
         self.Home_GK = self.find_goalkeeper('Home', data)

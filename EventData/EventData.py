@@ -259,7 +259,6 @@ class event_data:
 
         # mirroring?!
         if 'x' in self.mirror_away:
-            print('mirror x away')
             away_filter = new_data['Team'] == self.away_team
             new_data.loc[away_filter, 'Start_x'] = self.dimensions['x']['pitch'][0] - (
                     new_data.loc[away_filter, 'Start_x'] + self.dimensions['x']['pitch'][1] * (-1)) * 1
@@ -294,36 +293,37 @@ class event_data:
         ev_da = ev_da.loc[ev_da['Type'] == event_type]
         return ev_da
 
+    # styling
     etl = {'SHOT': 'solid', 'PASS': 'dotted'}
     etm = {'SHOT': '.', 'PASS': '.', 'SET PIECE': 's', 'BALL LOST': 'x', 'CHALLENGE': '1',
-           'RECOVERY': '2',
-           'BALL OUT': '.', 'FAULT RECEIVED': '^', 'CARD': 'v'}
+           'RECOVERY': '2', 'BALL OUT': '.', 'FAULT RECEIVED': '^', 'CARD': 'v'}
 
-    def plot_events(self, event_index, td_object, actions_back=0, frames_back=0, event_type_marker=etm,
-                    event_type_linestyle=etl, alpha=0.8, color='team'):
-        print('In development')
+    def plot_events(self, event_index, td_object, actions_back=0, actions_forward=0, frames_back=0, frames_forward=0,
+                    event_type_marker=etm, event_type_linestyle=etl, alpha=0.8, color='team'):
 
         assert self.scale_to_pitch == td_object.scale_to_pitch, 'Pitch needs to be the same for event and tracking data'
         assert 'Start_Frame' in self.data.columns, 'Event data has to be coupled with tracking data and contain frame ' \
                                                    'number; only available in metrica'
-        frame = self.data['Start_Frame'][event_index] - frames_back
+        frame = self.data['Start_Frame'][event_index] - frames_back + frames_forward
 
         fig, ax = td_object.plot_players(frame=frame, velocities=True, pitch_col='white',
                                          line_col='#444444')
 
-        for i, row in self.data.iloc[event_index - actions_back:event_index + 1].iterrows():
+        for i, row in self.data.iloc[event_index - actions_back:event_index + 1 + actions_forward].iterrows():
             if color == 'team':
-                color = self.colors[0] if row['Team'] == self.home_team else self.colors[1]
+                col = self.colors[0] if row['Team'] == self.home_team else self.colors[1]
             elif color == 'ball':
-                color = self.colors[2]
+                col = self.colors[2]
+            else:
+                col = color
 
             if row['Type'] in event_type_marker:
-                ax.plot(row['Start_x'], row['Start_y'], color=color, alpha=alpha,
+                ax.plot(row['Start_x'], row['Start_y'], color=col, alpha=alpha,
                         marker=event_type_marker[row['Type']])
             if row['Type'] in event_type_linestyle:
                 dx = row['End_x'] - row['Start_x']
                 dy = row['End_y'] - row['Start_y']
-                ax.arrow(x=row['Start_x'], y=row['Start_y'], dx=dx, dy=dy, color=color,
+                ax.arrow(x=row['Start_x'], y=row['Start_y'], dx=dx, dy=dy, color=col,
                          ls=event_type_linestyle[row['Type']],
                          width=max(self.dimensions['x']['pitch']) * 0.0001,
                          head_width=max(self.dimensions['x']['pitch']) * 0.01,
